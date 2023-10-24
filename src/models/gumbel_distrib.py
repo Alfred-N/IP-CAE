@@ -32,7 +32,7 @@ class IP(pl.LightningModule):
             P_init = torch.eye(dim_ip, requires_grad=True)[:num_vectors]
         else:
             raise ValueError(f"'{IP_initialization}' is not a valid IP initialization")
-        self.ip_vectors = nn.Parameter(P_init)  # num_ctp x dim_ip
+        self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip
 
         net_dims = [dim_ip] + hiddens + [num_categories]
         self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
@@ -59,7 +59,7 @@ class IP(pl.LightningModule):
         return nn.Sequential(*nets)
 
     def forward(self):
-        # num_ctp x num_categories
+        # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
         return pi_raw
 
@@ -100,7 +100,7 @@ class IP_NonShared(IP):
         self.weights = nn.ModuleList(networks)
         
     def forward(self):
-        # num_ctp x num_categories
+        # num_ip x num_categories
         ips = self.dropout(self.ip_vectors)
         pi_raws = []
         for i in range(self.num_vectors):
@@ -139,13 +139,13 @@ class IP_FullyConnected(IP):
             P_init = torch.randn((dim_ip*num_vectors,))
         else:
             raise ValueError(f"'{IP_initialization}' is not a valid IP initialization for class {type(self)}")
-        self.ip_vectors = nn.Parameter(P_init)  # num_ctp x dim_ip
+        self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip
 
         net_dims = [dim_ip*num_vectors] + hiddens + [num_categories*num_vectors]
         self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
 
     def forward(self):
-        # num_ctp x num_categories
+        # num_ip x num_categories
         ips = self.dropout(self.ip_vectors)
         pi_raw = self.weights(ips).reshape((self.num_vectors, self.num_categories))
         return pi_raw
@@ -171,7 +171,7 @@ class GumbelDistribution(pl.LightningModule):
         self.num_distributions = num_distributions
         self.dim_ip = dim_ip
 
-        ctp_args = dict(
+        ip_args = dict(
             num_categories=num_categories,
             dim_ip=dim_ip,
             num_vectors=num_distributions,
@@ -183,11 +183,11 @@ class GumbelDistribution(pl.LightningModule):
         )
         if dim_ip > 0:
             if IP_weights == "shared":
-                self.pi_marginal = IP(**ctp_args)
+                self.pi_marginal = IP(**ip_args)
             elif IP_weights == "separate":
-                self.pi_marginal = IP_NonShared(**ctp_args)
+                self.pi_marginal = IP_NonShared(**ip_args)
             elif IP_weights == "fc":
-                self.pi_marginal = IP_FullyConnected(**ctp_args)
+                self.pi_marginal = IP_FullyConnected(**ip_args)
             else:
                 raise NotImplementedError()
 
@@ -508,7 +508,7 @@ class GumbelDistributionBijectiveSoftmax(GumbelDistribution):
 
 
 if __name__ == "__main__":
-    # from utils import get_num_parameters
+    # Debug code
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     random = True
@@ -574,14 +574,14 @@ if __name__ == "__main__":
     # pi_raw_recov = distrib.invert_pi(pi_norm)
     # print("Rocovered raw params", pi_raw_recov)
 
-    print("------------------------------ctp----------------------------")
-    ctp_pi = IP(
+    print("------------------------------ip----------------------------")
+    IP_pi = IP(
         num_patches,
         num_vectors=num_distributions,
         dim_ip=dim_ip,
         marginal_initialization=marginal_initialization,
         hiddens=[],
     )
-    print(ctp_pi)
-    print(ctp_pi())
-    # print("Num params ctp = ", get_num_parameters(ctp_pi))
+    print(IP_pi)
+    print(IP_pi())
+    # print("Num params ip = ", get_num_parameters(IP_pi))

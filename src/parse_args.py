@@ -249,7 +249,7 @@ def get_args_parser(conf_parser):
         "--dim_ip",
         type=int,
         default=0,
-        help="Dimension of ctp vectors to use for distrib (<=0 means no ctp inputs)",
+        help="Dimension of ip vectors to use for distrib (<=0 means no ip inputs)",
     )
     parser.add_argument(
         "--IP_initialization",
