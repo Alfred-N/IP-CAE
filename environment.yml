@@ -1,0 +1,18 @@
+# create a conda env with 'conda env create -f environment.yml'
+name: IPCAE
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9 # 3.10 bugs out some dependencies
+  - scikit-learn
+  - pytorch-lightning
+  - pytorch=1.13
+  - torchvision=0.14
+  - timm=0.9
+  - pandas
+  - scipy
+  - pip
+  - pip:
+    - matplotlib
+    - wandb
+    - xlrd
