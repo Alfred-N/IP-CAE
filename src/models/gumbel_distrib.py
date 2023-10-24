@@ -161,7 +161,7 @@ class GumbelDistribution(pl.LightningModule):
         pi_dropout=0,
         ctp_dropout=0,
         layer_norm=False,
-        ctp_hiddens=[],
+        IP_hiddens=[],
         IP_initialization="identity",
         IP_weights="shared",
         IP_bias=True,
@@ -177,7 +177,7 @@ class GumbelDistribution(pl.LightningModule):
             num_vectors=num_distributions,
             marginal_initialization=marginal_initialization,
             dropout=ctp_dropout,
-            hiddens=ctp_hiddens,
+            hiddens=IP_hiddens,
             IP_initialization=IP_initialization,
             bias=IP_bias,
         )
@@ -535,9 +535,9 @@ if __name__ == "__main__":
     num_distributions = num_obs
     # dim_ip = 150
     dim_ip = 0
-    # ctp_hiddens = [78, 78, 78]
-    # ctp_hiddens = [100]
-    ctp_hiddens = []
+    # IP_hiddens = [78, 78, 78]
+    # IP_hiddens = [100]
+    IP_hiddens = []
     rao_samples = 0
     hard = False
     freeze = True
