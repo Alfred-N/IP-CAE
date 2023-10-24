@@ -247,6 +247,22 @@ def clas_cae_MLP_COIL20(**kwargs): # classification model
     )
 
 # MICE
+
+def cae_MLP_MICE(**kwargs):
+    return ConcreteMLP(
+        input_dim=77,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_MICE(**kwargs):
+    return ConcreteClassification(
+        input_dim=77,
+        num_classes=8,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
 def cae_linear_MICE(**kwargs):
     return ConcreteMLP(
         input_dim=77,
