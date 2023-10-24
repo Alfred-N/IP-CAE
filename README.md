@@ -16,6 +16,7 @@ We use WandB for detailed logging.
 **Either** sign in to your account
 `wandb login`
 and set the arguments
+
 `python src/main_pl.py --config=<your-config>  --wandb=<your-project> --wandb_entity=<your-entity>`
 
 **or** run the main script `src/main_pl.py` directly and select:
@@ -29,9 +30,11 @@ or
 Example command for reproducing MNIST results:
 
 Reconstruction:
+
 `python src/main_pl.py --config=configs/MNIST/base.yaml --dim_ip=784 --seed=11`
 
 Classification:
+
 `python src/main_pl.py --config=configs/MNIST/classification.yaml  --dim_ip=784 --seed=11`
 
 
