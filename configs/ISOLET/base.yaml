@@ -1,0 +1,29 @@
+model: cae_MLP_ISOLET
+# mask_ratio: 0.974
+k: 50
+dataset: isolet
+output_dir: outs/outs_isolet
+log_dir: outs/output_dir_isolet
+num_workers: 16
+batch_size: 128
+save_timelapse: False
+binarize: False
+loss_type: mse
+#--------hparams---------
+epochs: 200
+warmup_epochs: 0
+anneal_temp: 'exp'
+temp_base: 10
+temp_min: 0.01
+dim_ip: 0
+jsd_factor: 0
+blr: 0.001
+min_lr: 0.001
+batch_accum_iter: 1
+pi_dropout: 0
+ctp_dropout: 0
+gumbel_learn_mode: logits
+save_top_k: 1
+use_masked_loss: False
+anneal_lr: False
+mae_lr_scaling: False
