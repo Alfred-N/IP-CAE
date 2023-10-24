@@ -76,7 +76,7 @@ class BestMetricTracker:
 
 class PL_ReconstructionWrapper(pl.LightningModule):
     """
-    PyTorch Lightning module for the Concrete Masked Autoencoder.
+    PyTorch Lightning training wrapper module for reconstruction.
 
     Args:
         model (nn.Module): The model.
@@ -221,6 +221,14 @@ class PL_ReconstructionWrapper(pl.LightningModule):
 
 
 class PL_ClassificationWrapper(PL_ReconstructionWrapper):
+    """
+    PyTorch Lightning training wrapper module for classification.
+
+    Args:
+        model (nn.Module): The model.
+        config (dict): Configuration dictionary.
+    """
+
     def __init__(
         self,
         model,
