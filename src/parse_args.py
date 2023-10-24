@@ -313,10 +313,10 @@ def get_args_parser(conf_parser):
         help="Probability of dropping out an element of pi",
     )
     parser.add_argument(
-        "--ctp_dropout",
+        "--IP_dropout",
         type=float,
         default=0,
-        help="Probability of dropping out an element of the ctp vector",
+        help="Probability of dropping out an element of the IP vectors",
     )
     parser.add_argument(
         "--jsd_factor",

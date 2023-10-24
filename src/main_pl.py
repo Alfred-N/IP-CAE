@@ -122,7 +122,7 @@ def main(args):
             mask_ratio=args.mask_ratio,
             k=args.k,
             pi_dropout=args.pi_dropout,
-            ctp_dropout=args.ctp_dropout,
+            IP_dropout=args.IP_dropout,
             pi_layer_norm=args.pi_layer_norm,
             gumbel_learn_mode=args.gumbel_learn_mode,
             IP_initialization=args.IP_initialization,
