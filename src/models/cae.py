@@ -99,7 +99,7 @@ class ConcreteLinear(pl.LightningModule):
         )
         X_rec = self.decoder(u)
         loss = F.mse_loss(X, X_rec, reduction="mean")
-        frob_norm = torch.norm(X - X_rec, p="fro", dim=-1) / self.k
+        frob_norm = torch.norm(X - X_rec, p="fro", dim=-1) / self.input_dim
         frob_norm = frob_norm.mean()
         converge_dict = self.check_m_convergence(m)
         returns = {
