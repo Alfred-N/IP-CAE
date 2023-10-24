@@ -58,7 +58,7 @@ def main(args):
     eff_batch_size = (
         args.batch_size * args.accum_iter * args.num_devices * args.num_nodes
     )
-    if args.mae_lr_scaling:
+    if args.scale_lr_by_batchsize:
         args.lr = args.blr * eff_batch_size / 256 if args.lr is None else args.lr
     else:
         args.lr = args.blr

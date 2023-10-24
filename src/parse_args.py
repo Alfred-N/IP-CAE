@@ -90,10 +90,10 @@ def get_args_parser(conf_parser):
         help="Turn on cosine annealing lr",
     )
     parser.add_argument(
-        "--mae_lr_scaling",
+        "--scale_lr_by_batchsize",
         type=bool,
-        default=True,
-        help="Turns on MAE-style lr scaling which multiplies lr by (eff_batch_size / 256)",
+        default=False,
+        help="Turn on lr scaling wrt. batch size. Multiplies lr by (eff_batch_size / 256)",
     )
 
     parser.add_argument(

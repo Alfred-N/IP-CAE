@@ -27,4 +27,4 @@ gumbel_learn_mode: logits
 save_top_k: 1
 use_masked_loss: False
 anneal_lr: False
-mae_lr_scaling: False
+scale_lr_by_batchsize: False
