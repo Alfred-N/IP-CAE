@@ -12,6 +12,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 from urllib.request import urlretrieve
+import unlzw3
 
 import numpy as np
 import pandas as pd
@@ -112,8 +113,21 @@ def download_activity(root):
 def download_isolet(root):
     path = os.path.join(root, "isolet")
     download_zip("https://archive.ics.uci.edu/static/public/54/isolet.zip", path)
-    subprocess.run(["uncompress", os.path.join(path, "isolet1+2+3+4.data.Z")])
-    subprocess.run(["uncompress", os.path.join(path, "isolet5.data.Z")])
+
+    #old, reliant on linux package 'uncompress'
+    # subprocess.run(["uncompress", os.path.join(path, "isolet1+2+3+4.data.Z")])
+    # subprocess.run(["uncompress", os.path.join(path, "isolet5.data.Z")])
+
+    # use this package instead, and then also save the files (assuming as .data files?)
+    uncompressed_data_part_1 = unlzw3.unlzw(Path(os.path.join(path, "isolet1+2+3+4.data.Z")))
+    uncompressed_data_part_2 = unlzw3.unlzw(Path(os.path.join(path, "isolet5.data.Z")))
+
+    # Optionally, save the decompressed data files if needed
+    with open(os.path.join(path, "isolet1+2+3+4.data"), 'wb') as data_file:
+        data_file.write(uncompressed_data_part_1)
+
+    with open(os.path.join(path, "isolet5.data"), 'wb') as data_file:
+        data_file.write(uncompressed_data_part_2)
 
 
 def download_mice(root):
