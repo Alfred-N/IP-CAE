@@ -163,3 +163,5 @@ data/
 outs/
 log_dir/
 bash_scripts/
+wandb/
+slurm-*
