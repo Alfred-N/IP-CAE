@@ -162,3 +162,4 @@ cython_debug/
 data/
 outs/
 log_dir/
+bash_scripts/

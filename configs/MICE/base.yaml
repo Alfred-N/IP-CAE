@@ -1,4 +1,4 @@
-model: cae_linear_MICE
+model: cae_MLP_MICE
 #mask_ratio: 0.87
 k: 10
 dataset: mice
