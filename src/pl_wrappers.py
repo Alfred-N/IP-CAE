@@ -269,6 +269,7 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         metrics["loss"] = loss.detach().item()
         stats = {"train_" + key: val for key, val in metrics.items()}
         stats["gjsd_term"] = gjsd.detach().item()
+        stats["lr"] = self.lr
         if self.eeg_factor > 0:
             stats["eeg_term"] = eeg.detach().item()
         return loss, stats
