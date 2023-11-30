@@ -94,7 +94,8 @@ class CosineAnnealLRCallback(pl.Callback):
         tot_epochs = trainer.max_epochs
 
         if epoch < self.warmup_epochs:
-            lr_temp = self.lr * epoch / self.warmup_epochs
+            fac = epoch / self.warmup_epochs
+            lr_temp = self.lr * fac + self.min_lr * (1-fac)
         else:
             lr_temp = self.min_lr + (self.lr - self.min_lr) * 0.5 * (
                 1.0
@@ -118,7 +119,8 @@ class WarmupLRCallback(CosineAnnealLRCallback):
         epoch = trainer.current_epoch
 
         if epoch < self.warmup_epochs:
-            lr_temp = self.lr * epoch / self.warmup_epochs
+            fac = epoch / self.warmup_epochs
+            lr_temp = self.lr * fac + self.min_lr * (1-fac)
         else:
             lr_temp = self.lr
 
