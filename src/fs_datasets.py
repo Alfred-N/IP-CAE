@@ -701,7 +701,9 @@ def get_mice_split(root, split, transform=None, target_transform=None):
         return ValueError
 
 
-def get_breast_cancer_split(root, split, transform=None, target_transform=None):
+def get_breast_cancer_split(
+    root, split, transform=None, target_transform=None, scale=True
+):
     assert split in ["train", "valid", "test"], f"Invalid split: {split}"
 
     full = BreastCancer()
@@ -712,6 +714,19 @@ def get_breast_cancer_split(root, split, transform=None, target_transform=None):
     train, val, test = torch.utils.data.random_split(
         full, [l1, l2, l3], generator=torch.Generator().manual_seed(42)
     )
+
+    if scale:
+        x_train = train.dataset.tensors[0][train.indices]
+        scaler = MinMaxScaler(feature_range=(0, 1)).fit(x_train)
+        train.dataset.tensors[0][train.indices] = torch.from_numpy(
+            scaler.transform(train.dataset.tensors[0][train.indices])
+        ).to(torch.float32)
+        val.dataset.tensors[0][val.indices] = torch.from_numpy(
+            scaler.transform(val.dataset.tensors[0][val.indices])
+        ).to(torch.float32)
+        test.dataset.tensors[0][test.indices] = torch.from_numpy(
+            scaler.transform(test.dataset.tensors[0][test.indices])
+        ).to(torch.float32)
 
     if split == "train":
         return train
@@ -762,11 +777,6 @@ if __name__ == "__main__":
     print("Downloading activity")
     Activity(path, download=True)
     print("Downloading ISOLET")
-    # Isolet(path, download=True)
+    Isolet(path, download=True)
     print("Downloading mice protein")
     download_mice(path)
-    # import torchvision
-    # transform = torchvision.transforms.ToTensor()
-    # mnist_fashion_train = get_subset_mnist_fashion_split("data_CAE", split="train", transform=transform)
-    # from utils import get_dataset_mean_std
-    # print(get_dataset_mean_std(mnist_fashion_train))
