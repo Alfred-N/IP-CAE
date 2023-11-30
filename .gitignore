@@ -166,3 +166,4 @@ bash_scripts/
 wandb/
 slurm-*
 apptainer_defs/
+.vscode
