@@ -16,3 +16,4 @@ dependencies:
     - matplotlib
     - wandb
     - xlrd
+    - unlzw3
