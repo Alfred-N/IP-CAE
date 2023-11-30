@@ -165,3 +165,4 @@ log_dir/
 bash_scripts/
 wandb/
 slurm-*
+apptainer_defs/
