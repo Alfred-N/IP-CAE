@@ -85,9 +85,10 @@ def get_args_parser(conf_parser):
     )
     parser.add_argument(
         "--anneal_lr",
-        type=bool,
+        type=str,
+        choices=["none", "cosine", "warmup"],
         default=True,
-        help="Turn on cosine annealing lr",
+        help="Turn on annealing lr with warmup. 'cosine'=warmup followed by cosine annealing. 'warmup' = warmup only, thereafter fixed lr. ",
     )
     parser.add_argument(
         "--scale_lr_by_batchsize",

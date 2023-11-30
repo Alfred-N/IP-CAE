@@ -113,6 +113,23 @@ class CosineAnnealLRCallback(pl.Callback):
                 param_group["lr"] = lr_temp
         pl_module.lr = lr_temp
 
+class WarmupLRCallback(CosineAnnealLRCallback):
+    def on_train_epoch_start(self, trainer, pl_module):
+        epoch = trainer.current_epoch
+
+        if epoch < self.warmup_epochs:
+            lr_temp = self.lr * epoch / self.warmup_epochs
+        else:
+            lr_temp = self.lr
+
+        optimizer = trainer.optimizers[0]
+        for param_group in optimizer.param_groups:
+            if "lr_scale" in param_group:
+                param_group["lr"] = lr_temp * param_group["lr_scale"]
+            else:
+                param_group["lr"] = lr_temp
+        pl_module.lr = lr_temp
+
 
 class FreezeDistribCallback(pl.Callback):
     """Callback to freeze a model's distribution layer for a specified number of epochs.

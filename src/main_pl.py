@@ -13,6 +13,7 @@ from pl_callbacks import (
     CosineAnnealLRCallback,
     FreezeDistribCallback,
     ThresholdCallback,
+    WarmupLRCallback,
 )
 
 
@@ -76,10 +77,17 @@ def main(args):
             every_n_epochs=args.every_n_epochs,
         )
     ]
-    if args.anneal_lr:
-        # Cosine annealing LR callback
+    if args.anneal_lr == 'cosine':
+        # Cosine annealing LR callback with warmup
         callbacks += [
             CosineAnnealLRCallback(
+                lr=args.lr, min_lr=args.min_lr, warmup_epochs=args.warmup_epochs
+            )
+        ]
+    elif args.anneal_lr == 'warmup':
+        # Warmup, thereafter fixed lr
+        callbacks += [
+            WarmupLRCallback(
                 lr=args.lr, min_lr=args.min_lr, warmup_epochs=args.warmup_epochs
             )
         ]
