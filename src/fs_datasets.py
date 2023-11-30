@@ -7,20 +7,21 @@ import io
 import os
 import pickle
 import subprocess
-from typing import Any, Callable, Optional, Tuple
 import urllib.request
 import zipfile
 from pathlib import Path
+from typing import Any, Tuple
 from urllib.request import urlretrieve
-import unlzw3
 
 import numpy as np
 import pandas as pd
 import torch
+import torchvision
 from scipy.io import loadmat
+from sklearn.datasets import fetch_california_housing, load_breast_cancer
 from sklearn.preprocessing import MinMaxScaler
 from torch.utils.data import TensorDataset
-import torchvision
+
 
 def load_and_strip(filename):
     with open(filename, "r") as file:
@@ -113,15 +114,8 @@ def download_activity(root):
 def download_isolet(root):
     path = os.path.join(root, "isolet")
     download_zip("https://archive.ics.uci.edu/static/public/54/isolet.zip", path)
-
-    uncompressed_data_part_1 = unlzw3.unlzw(Path(os.path.join(path, "isolet1+2+3+4.data.Z")))
-    uncompressed_data_part_2 = unlzw3.unlzw(Path(os.path.join(path, "isolet5.data.Z")))
-
-    with open(os.path.join(path, "isolet1+2+3+4.data"), 'wb') as data_file:
-        data_file.write(uncompressed_data_part_1)
-
-    with open(os.path.join(path, "isolet5.data"), 'wb') as data_file:
-        data_file.write(uncompressed_data_part_2)
+    subprocess.run(["uncompress", os.path.join(path, "isolet1+2+3+4.data.Z")])
+    subprocess.run(["uncompress", os.path.join(path, "isolet5.data.Z")])
 
 
 def download_mice(root):
@@ -146,7 +140,6 @@ def load_mice(root, split):
     ]
     arrays_exist = [os.path.exists(_path) for _path in array_paths]
     scaler_filename = os.path.join(root, "mice", "scaler.pkl")
-    
 
     if np.all(arrays_exist):
         X_train = np.load(array_paths[0])
@@ -155,7 +148,7 @@ def load_mice(root, split):
         Y_train = np.load(array_paths[3])
         Y_val = np.load(array_paths[4])
         Y_test = np.load(array_paths[5])
-        with open(scaler_filename, 'rb') as scaler_file:
+        with open(scaler_filename, "rb") as scaler_file:
             scaler = pickle.load(scaler_file)
         print("Loaded preprocessed arrays")
 
@@ -184,7 +177,7 @@ def load_mice(root, split):
             encoding="UTF-8",
         )
 
-        X_old = np.copy(X)
+        X_old = np.copy(X)  # added by Alfred
         for i, row in enumerate(X):
             for j, val in enumerate(row):
                 if val == filling_value:
@@ -231,17 +224,22 @@ def load_mice(root, split):
             _arr = locals()[name]
             np.save(path, _arr)
         # Save the scaler to a file
-        with open(scaler_filename, 'wb') as scaler_file:
+        with open(scaler_filename, "wb") as scaler_file:
             pickle.dump(scaler, scaler_file)
-        
 
     print(f"Train set X = {X_train.shape}, Y = {Y_train.shape}")
     print(f"Valid set X = {X_val.shape},   Y = {Y_val.shape}")
     print(f"Test  set X = {X_test.shape},  Y = {Y_test.shape}")
 
-    mice_train = TensorDataset(torch.from_numpy(X_train).float(), torch.from_numpy(Y_train).long())
-    mice_val = TensorDataset(torch.from_numpy(X_val).float(), torch.from_numpy(Y_val).long())
-    mice_test = TensorDataset(torch.from_numpy(X_test).float(), torch.from_numpy(Y_test).long())
+    mice_train = TensorDataset(
+        torch.from_numpy(X_train).float(), torch.from_numpy(Y_train).long()
+    )
+    mice_val = TensorDataset(
+        torch.from_numpy(X_val).float(), torch.from_numpy(Y_val).long()
+    )
+    mice_test = TensorDataset(
+        torch.from_numpy(X_test).float(), torch.from_numpy(Y_test).long()
+    )
 
     return (mice_train, mice_val, mice_test), scaler
 
@@ -252,8 +250,12 @@ class Activity(TensorDataset):
             download_activity(root)
         x_train, y_train, x_test, y_test = load_activity(root)
         NUM_CLASSES = 6
-        y_train = torch.nn.functional.one_hot(torch.from_numpy(y_train).long(), num_classes = NUM_CLASSES)
-        y_test = torch.nn.functional.one_hot(torch.from_numpy(y_test).long(), num_classes = NUM_CLASSES)
+        y_train = torch.nn.functional.one_hot(
+            torch.from_numpy(y_train).long(), num_classes=NUM_CLASSES
+        )
+        y_test = torch.nn.functional.one_hot(
+            torch.from_numpy(y_test).long(), num_classes=NUM_CLASSES
+        )
         if train:
             super().__init__(torch.tensor(x_train, dtype=torch.float32), y_train)
         else:
@@ -266,8 +268,12 @@ class Isolet(TensorDataset):
             download_isolet(root)
         x_train, y_train, x_test, y_test = load_isolet(root)
         NUM_CLASSES = 26
-        y_train = torch.nn.functional.one_hot(torch.from_numpy(y_train).long(), num_classes = NUM_CLASSES)
-        y_test = torch.nn.functional.one_hot(torch.from_numpy(y_test).long(), num_classes = NUM_CLASSES)
+        y_train = torch.nn.functional.one_hot(
+            torch.from_numpy(y_train).long(), num_classes=NUM_CLASSES
+        )
+        y_test = torch.nn.functional.one_hot(
+            torch.from_numpy(y_test).long(), num_classes=NUM_CLASSES
+        )
         if train:
             super().__init__(torch.tensor(x_train, dtype=torch.float32), y_train)
         else:
@@ -333,7 +339,9 @@ def fetch_skfeature(name, folder, download=False):
     Y = data["Y"]
     if name == "COIL20":
         Y = Y - 1
-    Y = torch.nn.functional.one_hot(torch.tensor(Y, dtype=torch.int64).squeeze(-1)).numpy()
+    Y = torch.nn.functional.one_hot(
+        torch.tensor(Y, dtype=torch.int64).squeeze(-1)
+    ).numpy()
     X = np.asarray(X, dtype=np.float32)
     return X, Y
 
@@ -486,12 +494,28 @@ class Madelon(SkfeatureDataset):
 class CustomMNIST(torchvision.datasets.MNIST):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         data, label = super().__getitem__(index)
-        return data, torch.nn.functional.one_hot(torch.tensor(label, dtype=torch.int64), num_classes=10)
+        return data, torch.nn.functional.one_hot(
+            torch.tensor(label, dtype=torch.int64), num_classes=10
+        )
+
 
 class CustomFashionMNIST(torchvision.datasets.FashionMNIST):
     def __getitem__(self, index: int) -> Tuple[Any, Any]:
         data, label = super().__getitem__(index)
-        return data, torch.nn.functional.one_hot(torch.tensor(label, dtype=torch.int64), num_classes=10)
+        return data, torch.nn.functional.one_hot(
+            torch.tensor(label, dtype=torch.int64), num_classes=10
+        )
+
+
+class BreastCancer(TensorDataset):
+    def __init__(self):
+        X, y = load_breast_cancer(return_X_y=True)
+        NUM_CLASSES = 2
+        y = torch.nn.functional.one_hot(
+            torch.from_numpy(y).long(), num_classes=NUM_CLASSES
+        )
+        super().__init__(torch.tensor(X, dtype=torch.float32), y)
+
 
 # -------------------------------------------------------------------------------------------------------------------------------------
 # Functions for creating fixed train-valid-test splits
@@ -499,7 +523,6 @@ class CustomFashionMNIST(torchvision.datasets.FashionMNIST):
 
 def get_subset_mnist_split(root, split, transform=None, target_transform=None):
     assert split in ["train", "valid", "test"], f"Invalid split: {split}"
-
 
     if split == "train" or split == "valid":
         mnist_train = CustomMNIST(
@@ -678,6 +701,31 @@ def get_mice_split(root, split, transform=None, target_transform=None):
         return ValueError
 
 
+def get_breast_cancer_split(root, split, transform=None, target_transform=None):
+    assert split in ["train", "valid", "test"], f"Invalid split: {split}"
+
+    full = BreastCancer()
+    N = len(full)
+    l1 = int(0.6 * N)
+    l2 = int(0.2 * N)
+    l3 = N - l1 - l2
+    train, val, test = torch.utils.data.random_split(
+        full, [l1, l2, l3], generator=torch.Generator().manual_seed(42)
+    )
+
+    if split == "train":
+        return train
+
+    elif split == "valid":
+        return val
+
+    elif split == "test":
+        return test
+
+    else:
+        raise ValueError
+
+
 def get_dataset_split(dataset, root, split, transform=None, target_transform=None):
     # the passed transform and target_transform only works for mnist and mnist_fashion, for other datasets it is ignored
     D = {
@@ -687,6 +735,7 @@ def get_dataset_split(dataset, root, split, transform=None, target_transform=Non
         "coil20": get_coil20_split,
         "activity": get_activity_split,
         "mice": get_mice_split,
+        "cancer": get_breast_cancer_split,
     }
 
     return D[dataset](
@@ -713,7 +762,7 @@ if __name__ == "__main__":
     print("Downloading activity")
     Activity(path, download=True)
     print("Downloading ISOLET")
-    Isolet(path, download=True)
+    # Isolet(path, download=True)
     print("Downloading mice protein")
     download_mice(path)
     # import torchvision
