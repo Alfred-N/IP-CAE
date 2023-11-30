@@ -340,3 +340,21 @@ def clas_cae_MLP_ACTIVITY(**kwargs): # classification model
         num_classes=6,
         **kwargs
     )
+
+
+# CANCER
+
+def cae_MLP_CANCER(**kwargs):
+    return ConcreteMLP(
+        input_dim=30,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_CANCER(**kwargs):
+    return ConcreteClassification(
+        input_dim=30,
+        num_classes=2,
+        decoder_hiddens=[200],
+        **kwargs
+    )
