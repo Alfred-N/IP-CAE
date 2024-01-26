@@ -45,6 +45,7 @@ def main(args):
     logger = None
 
     if utils.get_rank() == 0:
+        print(f"args.wandb={args.wandb},args.wandb_entity={args.wandb_entity}")
         run = wandb.init(
             project=args.wandb,
             entity=args.wandb_entity,
@@ -52,6 +53,7 @@ def main(args):
             dir=args.output_dir,
             anonymous="allow"
         )
+        print(f"run.config={run.config}")
         update_args(args, dict(run.config))
         logger = WandbLogger()
 
@@ -184,9 +186,9 @@ def main(args):
     if args.save_top_k > 0:
         trainer.test(ckpt_path="best")
 
-    if args.wandb and utils.get_rank() == 0:
-        wandb.finish()
-
+    #if args.wandb and utils.get_rank() == 0:
+    #    wandb.finish()
+    wandb.finish()
 
 if __name__ == "__main__":
     # parse args

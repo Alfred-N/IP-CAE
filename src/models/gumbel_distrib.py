@@ -63,6 +63,200 @@ class IP(pl.LightningModule):
         pi_raw = self.weights(self.dropout(self.ip_vectors))
         return pi_raw
 
+class DiagNet(pl.LightningModule):
+    def __init__(self, a, b, bias=False):
+        super().__init__()
+        print(f"Calling IP_diagonal Module: DiagNet called with bias={bias}!")
+        self.bias_flag = bias
+        assert a == b
+        self.w = nn.Parameter(torch.randn(1,a))
+        if bias:
+            self.bias = nn.Parameter(torch.randn(1,a))
+            assert self.bias.requires_grad == True
+        assert self.w.requires_grad == True
+        
+
+    def forward(self, x):
+        k, p = x.shape
+        #w_diag = torch.diag(self.w)
+        #a, b = w_diag.shape
+        #assert a == b
+        #assert w_diag.requires_grad == True
+        o, p_ = self.w.shape
+        assert p_ == p and o == 1
+        y = x * self.w
+        if self.bias_flag:
+            y = y + self.bias
+        assert y.shape == x.shape
+        return y
+
+class IP_diagonal(pl.LightningModule):
+    def __init__(
+        self,
+        num_categories,
+        dim_ip,
+        num_vectors,
+        marginal_initialization="random",
+        dropout=0,
+        mlp_dropout=0,
+        hiddens=[],
+        norm_layer=nn.LayerNorm,
+        IP_initialization="random",
+        bias=True,
+    ):
+        super().__init__()
+        self.num_vectors = num_vectors # is k i.e number of feature selections/concrete layer nodes
+        self.num_categories = num_categories # is the input dim
+        self.dim_ip = dim_ip
+        if IP_initialization == "random":
+            P_init = torch.randn((num_vectors, dim_ip)) # k x p
+        elif IP_initialization == "identity":
+            P_init = torch.eye(dim_ip, requires_grad=True)[:num_vectors]
+        else:
+            raise ValueError(f"'{IP_initialization}' is not a valid IP initialization")
+        self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip = k x p
+        assert len(hiddens) == 0
+        net_dims = [dim_ip] + hiddens + [num_categories]
+        self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
+
+        if marginal_initialization == "uniform" and not hiddens:
+            assert False
+            pi_init = torch.ones([num_vectors, num_categories]) / num_categories
+            P_inv = np.linalg.pinv(P_init.detach())
+            W_init = torch.tensor(
+                np.dot(P_inv, pi_init).transpose(), requires_grad=True
+            )
+            self.weights[0].weight = nn.Parameter(W_init)
+            nn.init.constant_(self.weights[0].bias, 0)
+        self.dropout = nn.Dropout(dropout)
+
+    #def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+    #    nets = []
+    #    for i in range(len(net_dims) - 1):
+    #        nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+    #        if i < len(net_dims) - 2:
+    #            if norm_layer is not None:
+    #                nets += [norm_layer(net_dims[i + 1])]
+    #            nets += [nn.ReLU()]
+    #            nets += [nn.Dropout(mlp_dropout)]
+    #    return nn.Sequential(*nets)
+    def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+        nets = []
+        for i in range(len(net_dims) - 1):
+            #nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+            nets += [DiagNet(net_dims[i], net_dims[i + 1], bias=bias)]
+            if i < len(net_dims) - 2:
+                assert False
+                if norm_layer is not None:
+                    nets += [norm_layer(net_dims[i + 1])]
+                nets += [nn.ReLU()]
+                nets += [nn.Dropout(mlp_dropout)]
+        return nn.Sequential(*nets)
+
+
+    def forward(self):
+        # num_ip x num_categories
+        pi_raw = self.weights(self.dropout(self.ip_vectors))
+        return pi_raw
+
+
+class ScalarNet(pl.LightningModule):
+    def __init__(self, a, b, bias=False):
+        super().__init__()
+        print(f"Calling IP_scalar Module: ScalarNet called with bias={bias}!")
+        self.bias_flag = bias
+        assert a == b
+        self.w = nn.Parameter(torch.randn(1,1))
+        if bias:
+            self.bias = nn.Parameter(torch.randn(1,a))
+            assert self.bias.requires_grad == True
+        assert self.w.requires_grad == True
+        
+
+    def forward(self, x):
+        k, p = x.shape
+        #w_diag = torch.diag(self.w)
+        #a, b = w_diag.shape
+        #assert a == b
+        #assert w_diag.requires_grad == True
+        o, p_ = self.w.shape
+        assert p_ == 1 and o == 1
+        y = x * self.w
+        if self.bias_flag:
+            y = y + self.bias
+        assert y.shape == x.shape
+        return y
+
+
+class IP_scalar(pl.LightningModule):
+    def __init__(
+        self,
+        num_categories,
+        dim_ip,
+        num_vectors,
+        marginal_initialization="random",
+        dropout=0,
+        mlp_dropout=0,
+        hiddens=[],
+        norm_layer=nn.LayerNorm,
+        IP_initialization="random",
+        bias=True,
+    ):
+        super().__init__()
+        self.num_vectors = num_vectors # is k i.e number of feature selections/concrete layer nodes
+        self.num_categories = num_categories # is the input dim
+        self.dim_ip = dim_ip
+        if IP_initialization == "random":
+            P_init = torch.randn((num_vectors, dim_ip)) # k x p
+        elif IP_initialization == "identity":
+            P_init = torch.eye(dim_ip, requires_grad=True)[:num_vectors]
+        else:
+            raise ValueError(f"'{IP_initialization}' is not a valid IP initialization")
+        self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip = k x p
+        assert len(hiddens) == 0
+        net_dims = [dim_ip] + hiddens + [num_categories]
+        self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
+
+        if marginal_initialization == "uniform" and not hiddens:
+            assert False
+            pi_init = torch.ones([num_vectors, num_categories]) / num_categories
+            P_inv = np.linalg.pinv(P_init.detach())
+            W_init = torch.tensor(
+                np.dot(P_inv, pi_init).transpose(), requires_grad=True
+            )
+            self.weights[0].weight = nn.Parameter(W_init)
+            nn.init.constant_(self.weights[0].bias, 0)
+        self.dropout = nn.Dropout(dropout)
+
+    #def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+    #    nets = []
+    #    for i in range(len(net_dims) - 1):
+    #        nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+    #        if i < len(net_dims) - 2:
+    #            if norm_layer is not None:
+    #                nets += [norm_layer(net_dims[i + 1])]
+    #            nets += [nn.ReLU()]
+    #            nets += [nn.Dropout(mlp_dropout)]
+    #    return nn.Sequential(*nets)
+    def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+        nets = []
+        for i in range(len(net_dims) - 1):
+            #nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+            nets += [ScalarNet(net_dims[i], net_dims[i + 1], bias=bias)]
+            if i < len(net_dims) - 2:
+                assert False
+                if norm_layer is not None:
+                    nets += [norm_layer(net_dims[i + 1])]
+                nets += [nn.ReLU()]
+                nets += [nn.Dropout(mlp_dropout)]
+        return nn.Sequential(*nets)
+
+
+    def forward(self):
+        # num_ip x num_categories
+        pi_raw = self.weights(self.dropout(self.ip_vectors))
+        return pi_raw
+
 
 class IP_NonShared(IP):
     def __init__(
@@ -188,6 +382,10 @@ class GumbelDistribution(pl.LightningModule):
                 self.pi_marginal = IP_NonShared(**ip_args)
             elif IP_weights == "fc":
                 self.pi_marginal = IP_FullyConnected(**ip_args)
+            elif IP_weights == "diag":
+                self.pi_marginal = IP_diagonal(**ip_args)
+            elif IP_weights == "scalar":
+                self.pi_marginal = IP_scalar(**ip_args)
             else:
                 raise NotImplementedError()
 

@@ -260,7 +260,7 @@ def get_args_parser(conf_parser):
     )
     parser.add_argument(
         "--IP_weights",
-        choices=["shared", "separate", "fc"],
+        choices=["shared", "separate", "fc", "diag", "scalar"],
         default="shared",
         type=str,
         help="The type of transformation network of the IP vectors",
