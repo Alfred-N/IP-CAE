@@ -58,6 +58,9 @@ class IP(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
+    def get_scalar_value(self,):
+        return 0
+    
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
@@ -153,7 +156,9 @@ class IP_diagonal(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
-
+    def get_scalar_value(self,):
+        return 0
+    
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
@@ -166,12 +171,17 @@ class ScalarNet(pl.LightningModule):
         print(f"Calling IP_scalar Module: ScalarNet called with bias={bias}!")
         self.bias_flag = bias
         assert a == b
-        self.w = nn.Parameter(torch.randn(1,1))
+        self.w = nn.Parameter(torch.tensor(torch.randn(1,1)))
+        #self.w = nn.Parameter(torch.tensor([[0.1]]))
+        #self.w = nn.Parameter(torch.tensor([[-0.1]]))
+        #self.w = nn.Parameter(torch.tensor([[100.0]]))
         if bias:
             self.bias = nn.Parameter(torch.randn(1,a))
             assert self.bias.requires_grad == True
         assert self.w.requires_grad == True
         
+    def get_scalar_value(self,):
+        return float(self.w.reshape((-1)).clone().detach().cpu().numpy())
 
     def forward(self, x):
         k, p = x.shape
@@ -251,6 +261,8 @@ class IP_scalar(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
+    def get_scalar_value(self,):
+        return self.weights[0].get_scalar_value()
 
     def forward(self):
         # num_ip x num_categories
@@ -302,6 +314,8 @@ class IP_NonShared(IP):
         pi_raw_tensor = torch.stack(pi_raws)
         return pi_raw_tensor
 
+    def get_scalar_value(self,):
+        return 0
 
 class IP_FullyConnected(IP):
     def __init__(
@@ -344,6 +358,8 @@ class IP_FullyConnected(IP):
         pi_raw = self.weights(ips).reshape((self.num_vectors, self.num_categories))
         return pi_raw
 
+    def get_scalar_value(self,):
+        return 0
 
 class GumbelDistribution(pl.LightningModule):
     def __init__(
@@ -412,6 +428,12 @@ class GumbelDistribution(pl.LightningModule):
         else:
             self.pi_layernorm = None
         self.frozen = False
+
+    def get_scalar_value(self,):
+        if self.dim_ip > 0:
+            return self.pi_marginal.get_scalar_value()
+        else:
+            return 0
 
     def freeze(self, freeze: bool):
         for param in self.parameters():

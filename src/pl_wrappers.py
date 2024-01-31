@@ -155,6 +155,7 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**train_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_train", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -170,6 +171,7 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**val_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_valid", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
         return val_stats
 
     def test_step(self, batch, batch_idx):
@@ -185,6 +187,7 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**test_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_test", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
 
     def train_dataloader(self):
         return DataLoader(
@@ -300,6 +303,7 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         self.log_dict(
             {**train_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_train", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -315,6 +319,7 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         self.log_dict(
             {**val_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_valid", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
         return val_stats
 
     def test_step(self, batch, batch_idx):
@@ -330,6 +335,7 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         self.log_dict(
             {**test_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
+        self.log("scalar_value_test", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
         return test_stats
 
     def configure_optimizers(self):
