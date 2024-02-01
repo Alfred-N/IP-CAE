@@ -367,6 +367,12 @@ def get_args_parser(conf_parser):
         default=False,
         help="binarize the data, only affects MNIST",
     )
+    parser.add_argument(
+        "--no_gumbel_noise",
+        type=bool,
+        default=False,
+        help="flag to use gumbel noise during softmax",
+    )
     return parser
 
 

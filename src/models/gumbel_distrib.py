@@ -469,6 +469,7 @@ class GumbelDistribution(pl.LightningModule):
         ret_EEG=True,
         temp_jsd=None,
         eeg_threshold=None,
+        no_gumbel_noise=False
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
 
@@ -507,7 +508,10 @@ class GumbelDistribution(pl.LightningModule):
 
             else:
                 logits = logits.unsqueeze(0).repeat(num_batches, 1, 1)
-                batch_sampler = F.gumbel_softmax(logits, temperature, hard=hard)
+                if no_gumbel_noise:
+                    batch_sampler = F.softmax(logits/temperature, dim=-1)
+                else:
+                    batch_sampler = F.gumbel_softmax(logits, temperature, hard=hard)
 
         return batch_sampler, distrib_dict
 

@@ -25,12 +25,13 @@ class ConcreteLinear(pl.LightningModule):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
+        no_gumbel_noise = False
     ):
         super().__init__()
         self.model_family = "cae"
         self.input_dim = input_dim
         self.mask_ratio = mask_ratio
-
+        self.no_gumbel_noise = no_gumbel_noise
         assert not (mask_ratio is not None and k is not None), "Either specify mask ratio or k"
         if mask_ratio:
             self.k = int((1 - mask_ratio) * input_dim)
@@ -70,7 +71,7 @@ class ConcreteLinear(pl.LightningModule):
     def feature_select(self, X, temperature, random, hard=False, eeg_threshold=None, rao_samples=0):
         num_batches = X.shape[0]
         m, distrib_dict = self.gumbel_distrib.batch_sample_joint(
-            num_batches, temperature, random, hard=hard, eeg_threshold=eeg_threshold, rao_samples=rao_samples
+            num_batches, temperature, random, hard=hard, eeg_threshold=eeg_threshold, rao_samples=rao_samples, no_gumbel_noise=self.no_gumbel_noise
         )
         u = torch.bmm(m, X.unsqueeze(-1))
         u = u.squeeze(-1)
@@ -129,6 +130,7 @@ class ConcreteClassification(ConcreteLinear):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
+        no_gumbel_noise = False
     ):
         super().__init__(
             input_dim,
@@ -142,6 +144,7 @@ class ConcreteClassification(ConcreteLinear):
             IP_initialization=IP_initialization,
             IP_weights=IP_weights,
             IP_bias=IP_bias,
+            no_gumbel_noise=no_gumbel_noise
         )
         if len(decoder_hiddens) == 0:
             self.decoder = nn.Linear(self.k, num_classes, device=self.device)
@@ -187,6 +190,7 @@ class ConcreteMLP(ConcreteLinear):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
+        no_gumbel_noise = False
     ):
         super().__init__(
             input_dim,
@@ -200,6 +204,7 @@ class ConcreteMLP(ConcreteLinear):
             IP_initialization=IP_initialization,
             IP_weights=IP_weights,
             IP_bias=IP_bias,
+            no_gumbel_noise = no_gumbel_noise
         )
 
         decoder_hiddens = [self.k] + decoder_hiddens + [input_dim]
