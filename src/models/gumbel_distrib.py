@@ -58,13 +58,16 @@ class IP(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         return 0
-    
+
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
         return pi_raw
+
 
 class DiagNet(pl.LightningModule):
     def __init__(self, a, b, bias=False):
@@ -72,19 +75,18 @@ class DiagNet(pl.LightningModule):
         print(f"Calling IP_diagonal Module: DiagNet called with bias={bias}!")
         self.bias_flag = bias
         assert a == b
-        self.w = nn.Parameter(torch.randn(1,a))
+        self.w = nn.Parameter(torch.randn(1, a))
         if bias:
-            self.bias = nn.Parameter(torch.randn(1,a))
+            self.bias = nn.Parameter(torch.randn(1, a))
             assert self.bias.requires_grad == True
         assert self.w.requires_grad == True
-        
 
     def forward(self, x):
         k, p = x.shape
-        #w_diag = torch.diag(self.w)
-        #a, b = w_diag.shape
-        #assert a == b
-        #assert w_diag.requires_grad == True
+        # w_diag = torch.diag(self.w)
+        # a, b = w_diag.shape
+        # assert a == b
+        # assert w_diag.requires_grad == True
         o, p_ = self.w.shape
         assert p_ == p and o == 1
         y = x * self.w
@@ -92,6 +94,7 @@ class DiagNet(pl.LightningModule):
             y = y + self.bias
         assert y.shape == x.shape
         return y
+
 
 class IP_diagonal(pl.LightningModule):
     def __init__(
@@ -108,11 +111,13 @@ class IP_diagonal(pl.LightningModule):
         bias=True,
     ):
         super().__init__()
-        self.num_vectors = num_vectors # is k i.e number of feature selections/concrete layer nodes
-        self.num_categories = num_categories # is the input dim
+        self.num_vectors = (
+            num_vectors  # is k i.e number of feature selections/concrete layer nodes
+        )
+        self.num_categories = num_categories  # is the input dim
         self.dim_ip = dim_ip
         if IP_initialization == "random":
-            P_init = torch.randn((num_vectors, dim_ip)) # k x p
+            P_init = torch.randn((num_vectors, dim_ip))  # k x p
         elif IP_initialization == "identity":
             P_init = torch.eye(dim_ip, requires_grad=True)[:num_vectors]
         else:
@@ -133,7 +138,7 @@ class IP_diagonal(pl.LightningModule):
             nn.init.constant_(self.weights[0].bias, 0)
         self.dropout = nn.Dropout(dropout)
 
-    #def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+    # def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
     #    nets = []
     #    for i in range(len(net_dims) - 1):
     #        nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
@@ -146,7 +151,7 @@ class IP_diagonal(pl.LightningModule):
     def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
         nets = []
         for i in range(len(net_dims) - 1):
-            #nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+            # nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
             nets += [DiagNet(net_dims[i], net_dims[i + 1], bias=bias)]
             if i < len(net_dims) - 2:
                 assert False
@@ -156,9 +161,11 @@ class IP_diagonal(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         return 0
-    
+
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
@@ -171,24 +178,26 @@ class ScalarNet(pl.LightningModule):
         print(f"Calling IP_scalar Module: ScalarNet called with bias={bias}!")
         self.bias_flag = bias
         assert a == b
-        self.w = nn.Parameter(torch.tensor(torch.randn(1,1)))
-        #self.w = nn.Parameter(torch.tensor([[0.1]]))
-        #self.w = nn.Parameter(torch.tensor([[-0.1]]))
-        #self.w = nn.Parameter(torch.tensor([[100.0]]))
+        self.w = nn.Parameter(torch.tensor(torch.randn(1, 1)))
+        # self.w = nn.Parameter(torch.tensor([[0.1]]))
+        # self.w = nn.Parameter(torch.tensor([[-0.1]]))
+        # self.w = nn.Parameter(torch.tensor([[100.0]]))
         if bias:
-            self.bias = nn.Parameter(torch.randn(1,a))
+            self.bias = nn.Parameter(torch.randn(1, a))
             assert self.bias.requires_grad == True
         assert self.w.requires_grad == True
-        
-    def get_scalar_value(self,):
+
+    def get_scalar_value(
+        self,
+    ):
         return float(self.w.reshape((-1)).clone().detach().cpu().numpy())
 
     def forward(self, x):
         k, p = x.shape
-        #w_diag = torch.diag(self.w)
-        #a, b = w_diag.shape
-        #assert a == b
-        #assert w_diag.requires_grad == True
+        # w_diag = torch.diag(self.w)
+        # a, b = w_diag.shape
+        # assert a == b
+        # assert w_diag.requires_grad == True
         o, p_ = self.w.shape
         assert p_ == 1 and o == 1
         y = x * self.w
@@ -213,11 +222,13 @@ class IP_scalar(pl.LightningModule):
         bias=True,
     ):
         super().__init__()
-        self.num_vectors = num_vectors # is k i.e number of feature selections/concrete layer nodes
-        self.num_categories = num_categories # is the input dim
+        self.num_vectors = (
+            num_vectors  # is k i.e number of feature selections/concrete layer nodes
+        )
+        self.num_categories = num_categories  # is the input dim
         self.dim_ip = dim_ip
         if IP_initialization == "random":
-            P_init = torch.randn((num_vectors, dim_ip)) # k x p
+            P_init = torch.randn((num_vectors, dim_ip))  # k x p
         elif IP_initialization == "identity":
             P_init = torch.eye(dim_ip, requires_grad=True)[:num_vectors]
         else:
@@ -238,7 +249,7 @@ class IP_scalar(pl.LightningModule):
             nn.init.constant_(self.weights[0].bias, 0)
         self.dropout = nn.Dropout(dropout)
 
-    #def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
+    # def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
     #    nets = []
     #    for i in range(len(net_dims) - 1):
     #        nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
@@ -251,7 +262,7 @@ class IP_scalar(pl.LightningModule):
     def make_network(self, net_dims, norm_layer, mlp_dropout, bias):
         nets = []
         for i in range(len(net_dims) - 1):
-            #nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
+            # nets += [nn.Linear(net_dims[i], net_dims[i + 1], bias=bias)]
             nets += [ScalarNet(net_dims[i], net_dims[i + 1], bias=bias)]
             if i < len(net_dims) - 2:
                 assert False
@@ -261,7 +272,9 @@ class IP_scalar(pl.LightningModule):
                 nets += [nn.Dropout(mlp_dropout)]
         return nn.Sequential(*nets)
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         return self.weights[0].get_scalar_value()
 
     def forward(self):
@@ -304,7 +317,7 @@ class IP_NonShared(IP):
                 self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
             )
         self.weights = nn.ModuleList(networks)
-        
+
     def forward(self):
         # num_ip x num_categories
         ips = self.dropout(self.ip_vectors)
@@ -314,8 +327,11 @@ class IP_NonShared(IP):
         pi_raw_tensor = torch.stack(pi_raws)
         return pi_raw_tensor
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         return 0
+
 
 class IP_FullyConnected(IP):
     def __init__(
@@ -344,12 +360,14 @@ class IP_FullyConnected(IP):
             bias,
         )
         if IP_initialization == "random":
-            P_init = torch.randn((dim_ip*num_vectors,))
+            P_init = torch.randn((dim_ip * num_vectors,))
         else:
-            raise ValueError(f"'{IP_initialization}' is not a valid IP initialization for class {type(self)}")
+            raise ValueError(
+                f"'{IP_initialization}' is not a valid IP initialization for class {type(self)}"
+            )
         self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip
 
-        net_dims = [dim_ip*num_vectors] + hiddens + [num_categories*num_vectors]
+        net_dims = [dim_ip * num_vectors] + hiddens + [num_categories * num_vectors]
         self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
 
     def forward(self):
@@ -358,8 +376,11 @@ class IP_FullyConnected(IP):
         pi_raw = self.weights(ips).reshape((self.num_vectors, self.num_categories))
         return pi_raw
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         return 0
+
 
 class GumbelDistribution(pl.LightningModule):
     def __init__(
@@ -429,7 +450,9 @@ class GumbelDistribution(pl.LightningModule):
             self.pi_layernorm = None
         self.frozen = False
 
-    def get_scalar_value(self,):
+    def get_scalar_value(
+        self,
+    ):
         if self.dim_ip > 0:
             return self.pi_marginal.get_scalar_value()
         else:
@@ -469,7 +492,7 @@ class GumbelDistribution(pl.LightningModule):
         ret_EEG=True,
         temp_jsd=None,
         eeg_threshold=None,
-        no_gumbel_noise=False
+        no_gumbel_noise=False,
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
 
@@ -509,7 +532,7 @@ class GumbelDistribution(pl.LightningModule):
             else:
                 logits = logits.unsqueeze(0).repeat(num_batches, 1, 1)
                 if no_gumbel_noise:
-                    batch_sampler = F.softmax(logits/temperature, dim=-1)
+                    batch_sampler = F.softmax(logits / temperature, dim=-1)
                 else:
                     batch_sampler = F.gumbel_softmax(logits, temperature, hard=hard)
 
@@ -566,7 +589,7 @@ class GumbelDistribution(pl.LightningModule):
     # --------------------------------------------------------------------------
 
     def GJS_divergence(self, logits_raw):
-        # pi.shape = num_distrib x num_patches = M x C
+        # pi.shape = num_distrib x num_categories = M x C
         M = self.num_distributions
         # w = mixture_weights
         w = torch.ones([M, 1]).type_as(logits_raw) / M
@@ -738,22 +761,9 @@ if __name__ == "__main__":
     random = True
     marginal_initialization = "random"
 
-    ## FFHQ
-    # img_size = 128
-    # patch_size = 16
-    # mask_ratio = 0.75
-    # MNIST
-    img_size = 28
-    patch_size = 2
     mask_ratio = 0.9
-    ## Synthetic
-    # img_size = 50
-    # patch_size = 5
-    # mask_ratio = 0.85
-
-    num_patches = int(img_size**2 / patch_size**2)
-    assert img_size**2 / patch_size**2 % 1 == 0
-    num_obs = int((1 - mask_ratio) * num_patches)
+    num_features = 50
+    num_obs = int((1 - mask_ratio) * num_features)
 
     num_batches = 1
     num_distributions = num_obs
@@ -769,7 +779,7 @@ if __name__ == "__main__":
 
     print("------------------------------JOINT----------------------------")
     distrib = GumbelDistributionLogits(
-        num_patches,
+        num_features,
         num_distributions=num_distributions,
         marginal_initialization=marginal_initialization,
         dim_ip=dim_ip,
@@ -800,7 +810,7 @@ if __name__ == "__main__":
 
     print("------------------------------ip----------------------------")
     IP_pi = IP(
-        num_patches,
+        num_features,
         num_vectors=num_distributions,
         dim_ip=dim_ip,
         marginal_initialization=marginal_initialization,

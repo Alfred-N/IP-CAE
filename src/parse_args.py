@@ -40,7 +40,7 @@ def get_args_parser(conf_parser):
         "--mask_ratio",
         default=None,
         type=float,
-        help="Masking ratio (percentage of removed patches).  Mutually exlusive with '--k'",
+        help="Masking ratio (percentage of removed features).  Mutually exlusive with '--k'",
     )
 
     parser.add_argument(

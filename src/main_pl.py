@@ -51,13 +51,13 @@ def main(args):
             entity=args.wandb_entity,
             config=vars(args),
             dir=args.output_dir,
-            anonymous="allow"
+            anonymous="allow",
         )
         print(f"run.config={run.config}")
         update_args(args, dict(run.config))
         logger = WandbLogger()
 
-    # MAE lr scaling trick
+    # batch_size lr scaling trick
     eff_batch_size = (
         args.batch_size * args.accum_iter * args.num_devices * args.num_nodes
     )
@@ -79,14 +79,14 @@ def main(args):
             every_n_epochs=args.every_n_epochs,
         )
     ]
-    if args.anneal_lr == 'cosine':
+    if args.anneal_lr == "cosine":
         # Cosine annealing LR callback with warmup
         callbacks += [
             CosineAnnealLRCallback(
                 lr=args.lr, min_lr=args.min_lr, warmup_epochs=args.warmup_epochs
             )
         ]
-    elif args.anneal_lr == 'warmup':
+    elif args.anneal_lr == "warmup":
         # Warmup, thereafter fixed lr
         callbacks += [
             WarmupLRCallback(
@@ -138,13 +138,11 @@ def main(args):
             IP_initialization=args.IP_initialization,
             IP_weights=args.IP_weights,
             IP_bias=bool(int(args.IP_bias)),
-            no_gumbel_noise=args.no_gumbel_noise 
+            no_gumbel_noise=args.no_gumbel_noise,
         )
 
         if args.model.startswith("clas"):
-            pl_model = PL_CAE_Wrapper_CLAS(
-                model=model, args=args, datasets=datasets
-            )
+            pl_model = PL_CAE_Wrapper_CLAS(model=model, args=args, datasets=datasets)
         else:
             pl_model = PL_CAE_Wrapper(model=model, args=args, datasets=datasets)
 
@@ -159,9 +157,13 @@ def main(args):
 
     # Define trainer
     distributed = args.num_devices > 1 or args.num_nodes > 1
-    print(
-        f"Starting distributed training using {args.num_devices} devices on {args.num_nodes} node(s)"
-    ) if distributed else print("Starting single-device training")
+    (
+        print(
+            f"Starting distributed training using {args.num_devices} devices on {args.num_nodes} node(s)"
+        )
+        if distributed
+        else print("Starting single-device training")
+    )
 
     if run is not None and utils.get_rank() == 0:
         run.log({"num_parameters": utils.get_num_parameters(model)})
@@ -169,9 +171,11 @@ def main(args):
     trainer = pl.Trainer(
         # Distributed kwargs
         accelerator=args.accelerator,
-        devices=[i for i in range(args.num_devices)]
-        if args.accelerator == "gpu"
-        else args.num_devices,
+        devices=(
+            [i for i in range(args.num_devices)]
+            if args.accelerator == "gpu"
+            else args.num_devices
+        ),
         num_nodes=args.num_nodes,
         strategy=args.strategy if distributed else "auto",
         precision=args.precision,
@@ -187,9 +191,10 @@ def main(args):
     if args.save_top_k > 0:
         trainer.test(ckpt_path="best")
 
-    #if args.wandb and utils.get_rank() == 0:
+    # if args.wandb and utils.get_rank() == 0:
     #    wandb.finish()
     wandb.finish()
+
 
 if __name__ == "__main__":
     # parse args

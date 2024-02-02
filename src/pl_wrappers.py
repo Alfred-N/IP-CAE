@@ -16,13 +16,6 @@ from sklearn.metrics import (
 )
 
 
-
-
-
-def fill_masked_patches(x_in, x_pred, masks):
-    return x_pred * masks.unsqueeze(-1) + x_in * (1 - masks.unsqueeze(-1))
-
-
 def calc_classification_metrics(all_outputs, all_targets):
     all_targets = all_targets.detach().cpu().float().numpy()
     all_outputs = all_outputs.detach().cpu().float().numpy()
@@ -99,7 +92,9 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.pin_mem = args.pin_mem
         self.weight_decay = args.weight_decay
         self.datasets = datasets
-        self.hard = args.straight_through  # If True, use Straight-Through Gumbel-Softmax
+        self.hard = (
+            args.straight_through
+        )  # If True, use Straight-Through Gumbel-Softmax
         self.lr = args.lr
         self.norm_pix_loss = args.norm_pix_loss
         self.tracker = BestMetricTracker()
@@ -130,9 +125,9 @@ class PL_ReconstructionWrapper(pl.LightningModule):
 
     def _get_unique_percentage(self, pi):
         _, selected_inds = torch.max(pi, dim=-1)
-        num_observed_patches = self.model.num_obs_patches
+        num_observed_features = self.model.k
         unique_inds = np.unique(selected_inds.cpu())
-        unique_percentage = len(unique_inds) / num_observed_patches
+        unique_percentage = len(unique_inds) / num_observed_features
         return unique_percentage
 
     def _get_train_stats(self, returns):
@@ -155,7 +150,11 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**train_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_train", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_train",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -171,7 +170,11 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**val_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_valid", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_valid",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
         return val_stats
 
     def test_step(self, batch, batch_idx):
@@ -187,7 +190,11 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         self.log_dict(
             {**test_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_test", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_test",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
 
     def train_dataloader(self):
         return DataLoader(
@@ -297,13 +304,17 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
             temperature=self.temperature,
             hard=self.hard,
             eeg_threshold=self.eeg_threshold,
-            rao_samples = self.rao_samples
+            rao_samples=self.rao_samples,
         )
         loss, train_stats = self._get_train_stats(returns, labels)
         self.log_dict(
             {**train_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_train", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_train",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -319,7 +330,11 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         self.log_dict(
             {**val_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_valid", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_valid",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
         return val_stats
 
     def test_step(self, batch, batch_idx):
@@ -335,7 +350,11 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         self.log_dict(
             {**test_stats}, on_epoch=True, batch_size=imgs.shape[0], sync_dist=True
         )
-        self.log("scalar_value_test", self.model.gumbel_distrib.get_scalar_value(), on_step=True)
+        self.log(
+            "scalar_value_test",
+            self.model.gumbel_distrib.get_scalar_value(),
+            on_step=True,
+        )
         return test_stats
 
     def configure_optimizers(self):
@@ -422,9 +441,9 @@ class PL_CAE_Wrapper(PL_ReconstructionWrapper):
 
     def _get_unique_percentage(self, pi):
         _, selected_inds = torch.max(pi, dim=-1)
-        num_observed_patches = self.model.k
+        num_observed_features = self.model.k
         unique_inds = np.unique(selected_inds.cpu())
-        unique_percentage = len(unique_inds) / num_observed_patches
+        unique_percentage = len(unique_inds) / num_observed_features
         return unique_percentage
 
     def _get_eval_stats(self, split, returns, imgs):
@@ -460,6 +479,7 @@ class PL_CAE_Wrapper(PL_ReconstructionWrapper):
             if cur_epoch == self.trainer.max_epochs - 1:
                 self.log_dict(self.tracker.best_metrics)
 
+
 class PL_CAE_Wrapper_CLAS(PL_ClassificationWrapper):
     """
     PyTorch Lightning module for classification for the original Concrete Autoencoder.
@@ -473,10 +493,10 @@ class PL_CAE_Wrapper_CLAS(PL_ClassificationWrapper):
         input, labels = batch
         inputs = input.view((input.shape[0], -1))
         return inputs, labels
-    
+
     def _get_unique_percentage(self, pi):
         _, selected_inds = torch.max(pi, dim=-1)
-        num_observed_patches = self.model.k
+        num_observed_features = self.model.k
         unique_inds = np.unique(selected_inds.cpu())
-        unique_percentage = len(unique_inds) / num_observed_patches
+        unique_percentage = len(unique_inds) / num_observed_features
         return unique_percentage
