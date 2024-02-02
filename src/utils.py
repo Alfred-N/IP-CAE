@@ -44,6 +44,7 @@ TRANSFORMS_DICT = {
     },
 }
 
+
 def get_dataset(dataset_str, root, input_size=None):
     transform_train = None
     transform_val = None
@@ -53,87 +54,16 @@ def get_dataset(dataset_str, root, input_size=None):
         transform_val = TRANSFORMS_DICT[dataset_str]["test"](input_size)
         transform_test = TRANSFORMS_DICT[dataset_str]["test"](input_size)
 
-    dataset_train = fs_datasets.get_dataset_split(dataset_str, root, "train", transform_train)
-    dataset_val = fs_datasets.get_dataset_split(dataset_str, root, "valid", transform_val)
-    dataset_test = fs_datasets.get_dataset_split(dataset_str, root, "test", transform_test)
-    return (dataset_train, dataset_val, dataset_test)
-
-
-def plot_distribution(
-    pi_raw: torch.tensor,
-    base_path: str,
-    base_name: str,
-    num_observed_patches: int,
-    n_patch_per_side=14,
-):
-    save_name = "pi_marginal" + base_name + ".png"
-    save_path = os.path.join(base_path, save_name)
-    print(
-        "Plotting distribution--",
-        save_path,
+    dataset_train = fs_datasets.get_dataset_split(
+        dataset_str, root, "train", transform_train
     )
-    plt.matshow(pi_raw.numpy().reshape(n_patch_per_side, n_patch_per_side))
-    plt.savefig(save_path)
-    plt.close()
-
-
-def save_pi_snapshot(
-    pi_raw: torch.tensor,
-    method,
-    output_dir: str,
-    num_observed_patches: int,
-    n_patch_per_side: int,
-    save_individual_distribs=False,
-    base_name="",
-):
-    if method == "joint":
-        joint_subfolder = os.path.join(output_dir, "joints")
-        os.makedirs(joint_subfolder, exist_ok=True)
-        pi_raw_combined = torch.zeros(pi_raw[0].shape)
-        pi_summed = torch.zeros(pi_raw[0].shape)
-        for idx, row in enumerate(pi_raw):
-            if save_individual_distribs:
-                plot_distribution(
-                    row,
-                    joint_subfolder,
-                    str(idx) + "_" + base_name,
-                    num_observed_patches,
-                    n_patch_per_side=n_patch_per_side,
-                )
-            # print("ROW ", row)
-            max_, argmax_ = torch.max(row.unsqueeze(0), dim=1)
-            row_masked = torch.zeros(row.shape)
-            row_masked[argmax_] = max_
-            pi_raw_combined += row_masked
-            pi_summed += row
-        plot_distribution(
-            pi_raw_combined,
-            output_dir,
-            "_COMBINED_" + base_name,
-            num_observed_patches,
-            n_patch_per_side=n_patch_per_side,
-        )
-        plot_distribution(
-            pi_summed,
-            output_dir,
-            "_SUMMED_" + base_name,
-            num_observed_patches,
-            n_patch_per_side=n_patch_per_side,
-        )
-        _, selected_inds = torch.max(pi_raw, dim=1)
-
-    elif method == "topk":
-        plot_distribution(
-            pi_raw.squeeze(0),
-            output_dir,
-            base_name,
-            num_observed_patches,
-            n_patch_per_side=n_patch_per_side,
-        )
-
-        _, selected_inds = torch.topk(pi_raw, num_observed_patches)
-    else:
-        raise Exception("Invalid sampling method")
+    dataset_val = fs_datasets.get_dataset_split(
+        dataset_str, root, "valid", transform_val
+    )
+    dataset_test = fs_datasets.get_dataset_split(
+        dataset_str, root, "test", transform_test
+    )
+    return (dataset_train, dataset_val, dataset_test)
 
 
 def get_dataset_mean_std(dataset, num_workers=0):
@@ -169,6 +99,7 @@ def get_num_parameters(model):
     for param in list(model.parameters()):
         sum += param.numel()
     return sum
+
 
 def get_rank() -> int:
     rank_keys = ("RANK", "SLURM_PROCID", "LOCAL_RANK")
