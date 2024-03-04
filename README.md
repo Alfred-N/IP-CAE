@@ -1,5 +1,8 @@
 # Indirectly Parameterized Concrete Autoencoders (IP-CAE)
 
+![Indirect parametrization](./imgs/indirect.svg#gh-light-mode-only)
+![Indirect parametrization](./imgs/indirect_bg.svg#gh-dark-mode-only)
+
 #### Install requirements (Conda)
 `conda env create -f environment.yml`
 
