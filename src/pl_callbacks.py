@@ -196,36 +196,50 @@ class FreezeDistribCallback(pl.Callback):
 
 
 def plot_distribution(
-    pi_raw: torch.tensor,
+    pi_raw: torch.Tensor,
     base_path: str,
     base_name: str,
     current_epoch: int,
     max_epochs: int,
     n_pixels_per_side=14,
+    use_fixed_color_scale=False,  # New parameter with a default value of False
 ):
     save_name = "pi_marginal" + base_name + ".png"
     save_path = os.path.join(base_path, save_name)
     print("Plotting distribution--", save_path)
+
+    if use_fixed_color_scale:
+        # Apply a small offset before taking the log to avoid log(0)
+        pi_raw = torch.log(pi_raw + 1e-9)
+        # Perform the assert only if using a fixed color scale
+        assert (
+            pi_raw.min() >= 0 and pi_raw.max() <= 1
+        ), "pi_raw contains values outside the [0, 1] range."
+
+        vmin = np.log(1e-9)  # Fixed minimum value
+        vmax = np.log(1)  # Fixed maximum value (log(1) = 0)
+    else:
+        vmin, vmax = None, None  # Let matplotlib auto-adjust
 
     fig, ax = plt.subplots()
     im = ax.imshow(
         pi_raw.numpy().reshape(n_pixels_per_side, n_pixels_per_side),
         cmap="viridis",
         origin="upper",
+        vmin=vmin,
+        vmax=vmax,
     )
-    ax.axis("off")  # Turn off axis
+    ax.axis("off")
     plt.text(
         0.5,
-        -0.1,  # Adjust text position to be within the image borders
+        -0.1,
         f"Epoch {current_epoch}/{max_epochs}",
         horizontalalignment="center",
         verticalalignment="top",
         transform=ax.transAxes,
-        fontsize=10,  # Adjust font size as needed
-        color="white",  # Use a color that stands out against your image
-        bbox=dict(
-            facecolor="black", alpha=0.5, edgecolor="none"
-        ),  # Background for text
+        fontsize=10,
+        color="white",
+        bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"),
     )
     plt.savefig(save_path)
     plt.close()
