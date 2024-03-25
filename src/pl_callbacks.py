@@ -199,23 +199,35 @@ def plot_distribution(
     pi_raw: torch.tensor,
     base_path: str,
     base_name: str,
+    current_epoch: int,
+    max_epochs: int,
     n_pixels_per_side=14,
 ):
     save_name = "pi_marginal" + base_name + ".png"
     save_path = os.path.join(base_path, save_name)
-    print(
-        "Plotting distribution--",
-        save_path,
-    )
-    plt.imshow(
+    print("Plotting distribution--", save_path)
+
+    fig, ax = plt.subplots()
+    im = ax.imshow(
         pi_raw.numpy().reshape(n_pixels_per_side, n_pixels_per_side),
-        cmap="viridis",  # Choose the colormap you prefer
-        origin="upper",  # Set origin to upper left corner
+        cmap="viridis",
+        origin="upper",
     )
-    plt.axis("off")  # Turn off axis
-    plt.savefig(
-        save_path, bbox_inches="tight", pad_inches=0
-    )  # Save without extra padding
+    ax.axis("off")  # Turn off axis
+    plt.text(
+        0.5,
+        -0.1,  # Adjust text position to be within the image borders
+        f"Epoch {current_epoch}/{max_epochs}",
+        horizontalalignment="center",
+        verticalalignment="top",
+        transform=ax.transAxes,
+        fontsize=10,  # Adjust font size as needed
+        color="white",  # Use a color that stands out against your image
+        bbox=dict(
+            facecolor="black", alpha=0.5, edgecolor="none"
+        ),  # Background for text
+    )
+    plt.savefig(save_path)
     plt.close()
 
 
@@ -223,7 +235,8 @@ def save_pi_snapshot(
     pi_raw: torch.tensor,
     method,
     output_dir: str,
-    total_pixels: int,
+    current_epoch: int,
+    max_epochs: int,
     n_pixels_per_side: int,
     save_individual_distribs=False,
     base_name="",
@@ -239,9 +252,10 @@ def save_pi_snapshot(
                     row,
                     joint_subfolder,
                     str(idx) + "_" + base_name if base_name else str(idx),
+                    current_epoch=current_epoch,
+                    max_epochs=max_epochs,
                     n_pixels_per_side=n_pixels_per_side,
                 )
-            # print("ROW ", row)
             max_, argmax_ = torch.max(row.unsqueeze(0), dim=1)
             row_masked = torch.zeros(row.shape)
             row_masked[argmax_] = max_
@@ -251,25 +265,27 @@ def save_pi_snapshot(
             pi_raw_combined,
             output_dir,
             "_COMBINED_" + base_name,
+            current_epoch=current_epoch,
+            max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
         )
         plot_distribution(
             pi_summed,
             output_dir,
             "_SUMMED_" + base_name,
+            current_epoch=current_epoch,
+            max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
         )
-        _, selected_inds = torch.max(pi_raw, dim=1)
-
     elif method == "topk":
         plot_distribution(
             pi_raw.squeeze(0),
             output_dir,
             base_name,
+            current_epoch=current_epoch,
+            max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
         )
-
-        _, selected_inds = torch.topk(pi_raw, total_pixels)
     else:
         raise Exception("Invalid sampling method")
 
@@ -288,14 +304,14 @@ class SnapshotCallback(pl.Callback):
         n_pixels_per_side = int(np.sqrt(total_pixels))
 
         current_epoch = trainer.current_epoch
+        max_epochs = trainer.max_epochs - 2
         base_name = "epoch_" + str(current_epoch)
         save_pi_snapshot(
             pi,
             "joint",
             output_dir=self.output_dir,
-            total_pixels=total_pixels,
+            current_epoch=current_epoch,
+            max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
             base_name=base_name,
         )
-
-        return super().on_validation_epoch_end(trainer, pl_module)
