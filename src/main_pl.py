@@ -41,6 +41,7 @@ def main(args):
     print(f"Saving checkpoints in {args.output_dir}")
     print(f"Saving logs in {args.log_dir}")
 
+    args.epochs += 1
     # Wandb
     run = None
     logger = None
@@ -184,13 +185,15 @@ def main(args):
         strategy=args.strategy if distributed else "auto",
         precision=args.precision,
         # Training args
-        max_epochs=args.epochs,
+        max_epochs=args.epochs + 1,
         gradient_clip_val=args.clip_grad,
         logger=logger,
         callbacks=callbacks,
         num_sanity_val_steps=0 if bool(args.save_snapshots) else 2,
         benchmark=True,
     )
+    trainer.validate(pl_model)  # Validate once before training
+    trainer.fit_loop.epoch_progress.current.processed = 1
     trainer.fit(pl_model)
 
     if args.save_top_k > 0:

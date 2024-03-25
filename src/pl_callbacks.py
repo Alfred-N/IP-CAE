@@ -46,8 +46,8 @@ class TemperatureCallback(pl.Callback):
         if epoch < self.warmup_epochs:
             temp = self.temp_base
         else:
-            adj_epoch = epoch - self.warmup_epochs
-            adj_num_epochs = self.num_epochs - self.warmup_epochs
+            adj_epoch = epoch - (self.warmup_epochs + 1)
+            adj_num_epochs = self.num_epochs - (self.warmup_epochs + 1)
 
             if self.mode == "exp":
                 if self.stop_anneal > 0:
@@ -101,8 +101,8 @@ class CosineAnnealLRCallback(pl.Callback):
         self.warmup_epochs = warmup_epochs
 
     def on_train_epoch_start(self, trainer, pl_module):
-        epoch = trainer.current_epoch
-        tot_epochs = trainer.max_epochs
+        epoch = trainer.current_epoch - 1
+        tot_epochs = trainer.max_epochs - 1
 
         if epoch < self.warmup_epochs:
             fac = epoch / self.warmup_epochs
@@ -128,7 +128,7 @@ class CosineAnnealLRCallback(pl.Callback):
 
 class WarmupLRCallback(CosineAnnealLRCallback):
     def on_train_epoch_start(self, trainer, pl_module):
-        epoch = trainer.current_epoch
+        epoch = trainer.current_epoch - 1
 
         if epoch < self.warmup_epochs:
             fac = epoch / self.warmup_epochs
@@ -192,7 +192,7 @@ class FreezeDistribCallback(pl.Callback):
     def on_train_epoch_start(self, trainer, pl_module):
         if self.freeze_epochs is not None:
             distrib = self.attrgetter(pl_module.model)
-            distrib.freeze(trainer.current_epoch < self.freeze_epochs)
+            distrib.freeze((trainer.current_epoch - 1) < self.freeze_epochs)
 
 
 def plot_distribution(
