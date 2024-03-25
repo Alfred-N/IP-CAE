@@ -367,7 +367,7 @@ class PL_ClassificationWrapper(PL_ReconstructionWrapper):
         # Get the per-epoch metric value from the logged metrics
         cur_epoch = self.trainer.current_epoch
         if self.global_rank == 0:
-            if cur_epoch > 0:
+            if cur_epoch > 1:
                 metrics = self.trainer.logged_metrics
                 self.tracker.update_metric(
                     "best_gjsd",
@@ -459,7 +459,7 @@ class PL_CAE_Wrapper(PL_ReconstructionWrapper):
         # Get the per-epoch metric value from the logged metrics
         cur_epoch = self.trainer.current_epoch
         if self.global_rank == 0:
-            if cur_epoch > 0:
+            if cur_epoch > 1:
                 metrics = self.trainer.logged_metrics
                 self.tracker.update_metric(
                     "best_gjsd",
