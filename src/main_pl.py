@@ -9,6 +9,7 @@ import random
 
 import utils
 from pl_callbacks import (
+    SnapshotCallback,
     TemperatureCallback,
     CosineAnnealLRCallback,
     FreezeDistribCallback,
@@ -79,6 +80,9 @@ def main(args):
             every_n_epochs=args.every_n_epochs,
         )
     ]
+    if bool(args.save_snapshots):
+        callbacks += [SnapshotCallback(args.output_dir)]
+
     if args.anneal_lr == "cosine":
         # Cosine annealing LR callback with warmup
         callbacks += [
@@ -184,6 +188,7 @@ def main(args):
         gradient_clip_val=args.clip_grad,
         logger=logger,
         callbacks=callbacks,
+        num_sanity_val_steps=0 if bool(args.save_snapshots) else 2,
         benchmark=True,
     )
     trainer.fit(pl_model)

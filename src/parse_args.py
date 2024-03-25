@@ -122,7 +122,12 @@ def get_args_parser(conf_parser):
         type=str,
         help="String deciding which dataset to load/download",
     )
-
+    parser.add_argument(
+        "--save_snapshots",
+        type=int,
+        default=0,
+        help="saves snapshots of the gumbel distribs that can be later turned into a .gif",
+    )
     parser.add_argument(
         "--output_dir",
         default="./output_dir",
@@ -166,7 +171,7 @@ def get_args_parser(conf_parser):
     parser.add_argument(
         "--accelerator",
         type=str,
-        choices=["cpu", "gpu"],
+        choices=["cpu", "gpu", "mps"],
         default="gpu",
         help="Specify the accelerator (cpu or gpu)",
     )
