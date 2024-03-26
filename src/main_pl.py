@@ -144,6 +144,7 @@ def main(args):
             IP_weights=args.IP_weights,
             IP_bias=bool(int(args.IP_bias)),
             no_gumbel_noise=args.no_gumbel_noise,
+            marginal_initialization=args.marginal_initialization,
         )
 
         if args.model.startswith("clas"):

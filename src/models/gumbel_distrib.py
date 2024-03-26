@@ -437,6 +437,10 @@ class GumbelDistribution(pl.LightningModule):
                     [num_distributions, num_categories], requires_grad=True
                 )
                 prior = prior / prior.sum(dim=1).unsqueeze(1)
+            elif marginal_initialization == "identity":
+                prior = torch.eye(num_categories, requires_grad=True)[
+                    :num_distributions
+                ]
             else:
                 raise NotImplementedError
 
@@ -480,6 +484,14 @@ class GumbelDistribution(pl.LightningModule):
         logits = torch.log(pi)
         return pi, logits, pi_raw
 
+    def log_gradient_norm(self, grad, name="grad_norm_logits"):
+        # Calculate the norm of the gradient
+        grad_norm = grad.norm(2).item()
+        # Log using the PyTorch Lightning `log` method
+        self.logger.experiment.log(
+            {name: grad_norm, "global_step": self.trainer.global_step}
+        )
+
     def batch_sample_joint(
         self,
         num_batches,
@@ -495,6 +507,9 @@ class GumbelDistribution(pl.LightningModule):
         no_gumbel_noise=False,
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
+
+        if self.training:
+            logits.register_hook(lambda grad: self.log_gradient_norm(grad))
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:
