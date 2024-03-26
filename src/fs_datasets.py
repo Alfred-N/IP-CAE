@@ -741,6 +741,61 @@ def get_breast_cancer_split(
         raise ValueError
 
 
+from nips2003 import Arcene, Dexter
+
+
+def get_arcene_split(root, split, transform=None, target_transform=None, scale=True):
+    if split == "train":
+        train = Arcene(root=root, split="train", download=True)
+        return train
+    elif split == "valid" or split == "test":
+        val = Arcene(root=root, split="valid", download=True)
+        return val
+
+
+def get_dexter_split(root, split, transform=None, target_transform=None, scale=True):
+    if split == "train":
+        train = Dexter(root=root, split="train", download=True)
+        return train
+    elif split == "valid" or split == "test":
+        val = Dexter(root=root, split="valid", download=True)
+        return val
+
+
+from gene_expression import GeneExpression
+
+
+def get_gene_split(root, split, transform=None, target_transform=None, scale=True):
+    train, val, test = torch.utils.data.random_split(
+        GeneExpression(root=root, download=True),
+        [0.6, 0.2, 0.2],
+        generator=torch.Generator().manual_seed(42),
+    )
+    if split == "train":
+        return train
+    elif split == "valid":
+        return val
+    elif split == "test":
+        return test
+
+
+from breast_cancer import BreastCancer
+
+
+def get_breast_split(root, split, transform=None, target_transform=None, scale=True):
+    train, val, test = torch.utils.data.random_split(
+        BreastCancer(root=root, download=True),
+        [0.6, 0.2, 0.2],
+        generator=torch.Generator().manual_seed(42),
+    )
+    if split == "train":
+        return train
+    elif split == "valid":
+        return val
+    elif split == "test":
+        return test
+
+
 def get_dataset_split(dataset, root, split, transform=None, target_transform=None):
     # the passed transform and target_transform only works for mnist and mnist_fashion, for other datasets it is ignored
     D = {
@@ -751,6 +806,10 @@ def get_dataset_split(dataset, root, split, transform=None, target_transform=Non
         "activity": get_activity_split,
         "mice": get_mice_split,
         "cancer": get_breast_cancer_split,
+        "arcene": get_arcene_split,
+        "dexter": get_dexter_split,
+        "gene": get_gene_split,
+        "breast": get_breast_split,
     }
 
     return D[dataset](
