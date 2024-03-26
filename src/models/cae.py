@@ -11,12 +11,13 @@ import torch.nn as nn
 import pytorch_lightning as pl
 import torch.nn.functional as F
 
+
 class ConcreteLinear(pl.LightningModule):
     def __init__(
         self,
         input_dim=77,
-        mask_ratio= None,
-        k = None,
+        mask_ratio=None,
+        k=None,
         dim_ip=0,
         pi_dropout=0,
         IP_dropout=0,
@@ -25,14 +26,17 @@ class ConcreteLinear(pl.LightningModule):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
-        no_gumbel_noise = False
+        no_gumbel_noise=False,
+        marginal_initialization="random",
     ):
         super().__init__()
         self.model_family = "cae"
         self.input_dim = input_dim
         self.mask_ratio = mask_ratio
         self.no_gumbel_noise = no_gumbel_noise
-        assert not (mask_ratio is not None and k is not None), "Either specify mask ratio or k"
+        assert not (
+            mask_ratio is not None and k is not None
+        ), "Either specify mask ratio or k"
         if mask_ratio:
             self.k = int((1 - mask_ratio) * input_dim)
         else:
@@ -41,7 +45,7 @@ class ConcreteLinear(pl.LightningModule):
         gumbel_args = dict(
             num_categories=input_dim,
             num_distributions=self.k,
-            marginal_initialization="random",
+            marginal_initialization=marginal_initialization,
             dim_ip=dim_ip,
             pi_dropout=pi_dropout,
             IP_dropout=IP_dropout,
@@ -68,10 +72,18 @@ class ConcreteLinear(pl.LightningModule):
 
         self.decoder = nn.Linear(self.k, input_dim, device=self.device)
 
-    def feature_select(self, X, temperature, random, hard=False, eeg_threshold=None, rao_samples=0):
+    def feature_select(
+        self, X, temperature, random, hard=False, eeg_threshold=None, rao_samples=0
+    ):
         num_batches = X.shape[0]
         m, distrib_dict = self.gumbel_distrib.batch_sample_joint(
-            num_batches, temperature, random, hard=hard, eeg_threshold=eeg_threshold, rao_samples=rao_samples, no_gumbel_noise=self.no_gumbel_noise
+            num_batches,
+            temperature,
+            random,
+            hard=hard,
+            eeg_threshold=eeg_threshold,
+            rao_samples=rao_samples,
+            no_gumbel_noise=self.no_gumbel_noise,
         )
         u = torch.bmm(m, X.unsqueeze(-1))
         u = u.squeeze(-1)
@@ -94,9 +106,16 @@ class ConcreteLinear(pl.LightningModule):
         }
         return converge_dict
 
-    def forward(self, X, random, temperature, hard=False, eeg_threshold=None, rao_samples=0):
+    def forward(
+        self, X, random, temperature, hard=False, eeg_threshold=None, rao_samples=0
+    ):
         u, distrib_dict, m = self.feature_select(
-            X, temperature, random, hard=hard, eeg_threshold=eeg_threshold, rao_samples=rao_samples
+            X,
+            temperature,
+            random,
+            hard=hard,
+            eeg_threshold=eeg_threshold,
+            rao_samples=rao_samples,
         )
         X_rec = self.decoder(u)
         loss = F.mse_loss(X, X_rec, reduction="mean")
@@ -130,7 +149,8 @@ class ConcreteClassification(ConcreteLinear):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
-        no_gumbel_noise = False
+        no_gumbel_noise=False,
+        marginal_initialization="random",
     ):
         super().__init__(
             input_dim,
@@ -144,7 +164,8 @@ class ConcreteClassification(ConcreteLinear):
             IP_initialization=IP_initialization,
             IP_weights=IP_weights,
             IP_bias=IP_bias,
-            no_gumbel_noise=no_gumbel_noise
+            no_gumbel_noise=no_gumbel_noise,
+            marginal_initialization=marginal_initialization,
         )
         if len(decoder_hiddens) == 0:
             self.decoder = nn.Linear(self.k, num_classes, device=self.device)
@@ -160,9 +181,16 @@ class ConcreteClassification(ConcreteLinear):
                     nets_dec += [nn.Dropout(dropout)]
             self.decoder = nn.Sequential(*nets_dec)
 
-    def forward(self, X, random, temperature, hard=False, eeg_threshold=None, rao_samples=0):
+    def forward(
+        self, X, random, temperature, hard=False, eeg_threshold=None, rao_samples=0
+    ):
         u, distrib_dict, m = self.feature_select(
-            X, temperature, random, hard=hard, rao_samples=rao_samples, eeg_threshold=eeg_threshold
+            X,
+            temperature,
+            random,
+            hard=hard,
+            rao_samples=rao_samples,
+            eeg_threshold=eeg_threshold,
         )
         y_pred = self.decoder(u)
         return_dict = dict(
@@ -190,7 +218,8 @@ class ConcreteMLP(ConcreteLinear):
         IP_initialization="random",
         IP_weights="shared",
         IP_bias=True,
-        no_gumbel_noise = False
+        no_gumbel_noise=False,
+        marginal_initialization="random",
     ):
         super().__init__(
             input_dim,
@@ -204,7 +233,8 @@ class ConcreteMLP(ConcreteLinear):
             IP_initialization=IP_initialization,
             IP_weights=IP_weights,
             IP_bias=IP_bias,
-            no_gumbel_noise = no_gumbel_noise
+            no_gumbel_noise=no_gumbel_noise,
+            marginal_initialization=marginal_initialization,
         )
 
         decoder_hiddens = [self.k] + decoder_hiddens + [input_dim]
@@ -220,146 +250,102 @@ class ConcreteMLP(ConcreteLinear):
 
 
 # MNIST
-def cae_MLP_MNIST(**kwargs): # reconstruction model
-    return ConcreteMLP(
-        input_dim=784,
-        decoder_hiddens=[200],
-        **kwargs
+def cae_MLP_MNIST(**kwargs):  # reconstruction model
+    return ConcreteMLP(input_dim=784, decoder_hiddens=[200], **kwargs)
+
+
+def clas_cae_MLP_MNIST(**kwargs):  # classification model
+    return ConcreteClassification(
+        input_dim=784, decoder_hiddens=[200], num_classes=10, **kwargs
     )
 
-def clas_cae_MLP_MNIST(**kwargs): # classification model
-    return ConcreteClassification(
-        input_dim=784,
-        decoder_hiddens=[200],
-        num_classes=10,
-        **kwargs
-    )
 
 # COIL20
 def cae_MLP_COIL20(**kwargs):
-    return ConcreteMLP(
-        input_dim=1024,
-        decoder_hiddens=[200],
-        **kwargs
+    return ConcreteMLP(input_dim=1024, decoder_hiddens=[200], **kwargs)
+
+
+def clas_cae_MLP_COIL20(**kwargs):  # classification model
+    return ConcreteClassification(
+        input_dim=1024, decoder_hiddens=[200], num_classes=20, **kwargs
     )
 
-def clas_cae_MLP_COIL20(**kwargs): # classification model
-    return ConcreteClassification(
-        input_dim=1024,
-        decoder_hiddens=[200],
-        num_classes=20,
-        **kwargs
-    )
 
 # MICE
 
+
 def cae_MLP_MICE(**kwargs):
-    return ConcreteMLP(
-        input_dim=77,
-        decoder_hiddens=[200],
-        **kwargs
-    )
+    return ConcreteMLP(input_dim=77, decoder_hiddens=[200], **kwargs)
+
 
 def clas_cae_MLP_MICE(**kwargs):
     return ConcreteClassification(
-        input_dim=77,
-        num_classes=8,
-        decoder_hiddens=[200],
-        **kwargs
+        input_dim=77, num_classes=8, decoder_hiddens=[200], **kwargs
     )
+
 
 def cae_linear_MICE(**kwargs):
-    return ConcreteMLP(
-        input_dim=77,
-        **kwargs
-    )
+    return ConcreteMLP(input_dim=77, **kwargs)
+
 
 def clas_cae_linear_MICE(**kwargs):
-    return ConcreteClassification(
-        input_dim=77,
-        num_classes=8,
-        **kwargs
-    )
+    return ConcreteClassification(input_dim=77, num_classes=8, **kwargs)
+
 
 # ISOLET
 def cae_MLP_ISOLET(**kwargs):
-    return ConcreteMLP(
-        input_dim=617,
-        decoder_hiddens=[200],
-        **kwargs
+    return ConcreteMLP(input_dim=617, decoder_hiddens=[200], **kwargs)
+
+
+def clas_cae_MLP_ISOLET(**kwargs):  # classification model
+    return ConcreteClassification(
+        input_dim=617, decoder_hiddens=[200], num_classes=26, **kwargs
     )
 
-def clas_cae_MLP_ISOLET(**kwargs): # classification model
-    return ConcreteClassification(
-        input_dim=617,
-        decoder_hiddens=[200],
-        num_classes=26,
-        **kwargs
-    )
 
 # ISOLET
 def cae_MLP_ISOLET_linear(**kwargs):
-    return ConcreteMLP(
-        input_dim=617,
-        decoder_hiddens=[],
-        **kwargs
+    return ConcreteMLP(input_dim=617, decoder_hiddens=[], **kwargs)
+
+
+def clas_cae_MLP_ISOLET_linear(**kwargs):  # classification model
+    return ConcreteClassification(
+        input_dim=617, decoder_hiddens=[], num_classes=26, **kwargs
     )
 
-def clas_cae_MLP_ISOLET_linear(**kwargs): # classification model
-    return ConcreteClassification(
-        input_dim=617,
-        decoder_hiddens=[],
-        num_classes=26,
-        **kwargs
-    )
 
 # ISOLET
 def cae_MLP_ISOLET_2_hiddens(**kwargs):
-    return ConcreteMLP(
-        input_dim=617,
-        decoder_hiddens=[200, 200],
-        **kwargs
+    return ConcreteMLP(input_dim=617, decoder_hiddens=[200, 200], **kwargs)
+
+
+def clas_cae_MLP_ISOLET_2_hiddens(**kwargs):  # classification model
+    return ConcreteClassification(
+        input_dim=617, decoder_hiddens=[200, 200], num_classes=26, **kwargs
     )
 
-def clas_cae_MLP_ISOLET_2_hiddens(**kwargs): # classification model
-    return ConcreteClassification(
-        input_dim=617,
-        decoder_hiddens=[200, 200],
-        num_classes=26,
-        **kwargs
-    )
 
 # SMARTPHONE
 
-def cae_MLP_ACTIVITY(**kwargs):
-    return ConcreteMLP(
-        input_dim=561,
-        decoder_hiddens=[200],
-        **kwargs
-    )
 
-def clas_cae_MLP_ACTIVITY(**kwargs): # classification model
+def cae_MLP_ACTIVITY(**kwargs):
+    return ConcreteMLP(input_dim=561, decoder_hiddens=[200], **kwargs)
+
+
+def clas_cae_MLP_ACTIVITY(**kwargs):  # classification model
     return ConcreteClassification(
-        input_dim=561,
-        decoder_hiddens=[200],
-        num_classes=6,
-        **kwargs
+        input_dim=561, decoder_hiddens=[200], num_classes=6, **kwargs
     )
 
 
 # CANCER
 
+
 def cae_MLP_CANCER(**kwargs):
-    return ConcreteMLP(
-        input_dim=30,
-        decoder_hiddens=[200],
-        **kwargs
-    )
+    return ConcreteMLP(input_dim=30, decoder_hiddens=[200], **kwargs)
+
 
 def clas_cae_MLP_CANCER(**kwargs):
     return ConcreteClassification(
-        input_dim=30,
-        num_classes=2,
-        decoder_hiddens=[200],
-        **kwargs
+        input_dim=30, num_classes=2, decoder_hiddens=[200], **kwargs
     )

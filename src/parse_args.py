@@ -258,6 +258,12 @@ def get_args_parser(conf_parser):
         help="Dimension of ip vectors to use for distrib (<=0 means no ip inputs)",
     )
     parser.add_argument(
+        "--marginal_initialization",
+        choices=["random", "uniform", "identity"],
+        default="random",
+        help="Initialization of alpha/log alpha depending on activation",
+    )
+    parser.add_argument(
         "--IP_initialization",
         choices=["random", "identity"],
         default="random",

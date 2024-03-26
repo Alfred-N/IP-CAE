@@ -437,6 +437,10 @@ class GumbelDistribution(pl.LightningModule):
                     [num_distributions, num_categories], requires_grad=True
                 )
                 prior = prior / prior.sum(dim=1).unsqueeze(1)
+            elif marginal_initialization == "identity":
+                prior = torch.eye(num_categories, requires_grad=True)[
+                    :num_distributions
+                ]
             else:
                 raise NotImplementedError
 
