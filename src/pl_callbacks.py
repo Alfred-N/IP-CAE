@@ -202,24 +202,24 @@ def plot_distribution(
     current_epoch: int,
     max_epochs: int,
     n_pixels_per_side=14,
-    use_fixed_color_scale=False,  # New parameter with a default value of False
+    use_fixed_color_scale=False,
+    num_unique_selections=None,
+    k=None,
 ):
     save_name = "pi_marginal" + base_name + ".png"
     save_path = os.path.join(base_path, save_name)
     print("Plotting distribution--", save_path)
 
     if use_fixed_color_scale:
-        # Apply a small offset before taking the log to avoid log(0)
         pi_raw = torch.log(pi_raw + 1e-9)
-        # Perform the assert only if using a fixed color scale
         assert (
             pi_raw.min() >= 0 and pi_raw.max() <= 1
         ), "pi_raw contains values outside the [0, 1] range."
 
-        vmin = np.log(1e-9)  # Fixed minimum value
-        vmax = np.log(1)  # Fixed maximum value (log(1) = 0)
+        vmin = np.log(1e-9)
+        vmax = np.log(1)
     else:
-        vmin, vmax = None, None  # Let matplotlib auto-adjust
+        vmin, vmax = None, None
 
     fig, ax = plt.subplots()
     im = ax.imshow(
@@ -230,23 +230,38 @@ def plot_distribution(
         vmax=vmax,
     )
     ax.axis("off")
-    plt.text(
-        0.5,
-        -0.1,
-        f"Epoch {current_epoch}/{max_epochs}",
-        horizontalalignment="center",
-        verticalalignment="top",
-        transform=ax.transAxes,
-        fontsize=10,
-        color="white",
-        bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"),
-    )
+
+    if num_unique_selections is not None and k is not None:
+        plt.text(
+            0.5,
+            -0.1,
+            f"Epoch {current_epoch}/{max_epochs}. Unique {num_unique_selections}/{k}.",
+            horizontalalignment="center",
+            verticalalignment="top",
+            transform=ax.transAxes,
+            fontsize=10,
+            color="white",
+            bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"),
+        )
+    else:
+        plt.text(
+            0.5,
+            -0.1,
+            f"Epoch {current_epoch}/{max_epochs}",
+            horizontalalignment="center",
+            verticalalignment="top",
+            transform=ax.transAxes,
+            fontsize=10,
+            color="white",
+            bbox=dict(facecolor="black", alpha=0.5, edgecolor="none"),
+        )
+
     plt.savefig(save_path)
     plt.close()
 
 
 def save_pi_snapshot(
-    pi_raw: torch.tensor,
+    pi: torch.tensor,
     method,
     output_dir: str,
     current_epoch: int,
@@ -254,13 +269,15 @@ def save_pi_snapshot(
     n_pixels_per_side: int,
     save_individual_distribs=False,
     base_name="",
+    include_binary=True,
 ):
     if method == "joint":
+        k, d = pi.shape
         joint_subfolder = os.path.join(output_dir, "joints")
         os.makedirs(joint_subfolder, exist_ok=True)
-        pi_raw_combined = torch.zeros(pi_raw[0].shape)
-        pi_summed = torch.zeros(pi_raw[0].shape)
-        for idx, row in enumerate(pi_raw):
+        pi_combined = torch.zeros(pi[0].shape)
+        pi_summed = torch.zeros(pi[0].shape)
+        for idx, row in enumerate(pi):
             if save_individual_distribs:
                 plot_distribution(
                     row,
@@ -273,15 +290,35 @@ def save_pi_snapshot(
             max_, argmax_ = torch.max(row.unsqueeze(0), dim=1)
             row_masked = torch.zeros(row.shape)
             row_masked[argmax_] = max_
-            pi_raw_combined += row_masked
+            pi_combined += row_masked
             pi_summed += row
+
+        _, selected_inds = torch.max(pi, dim=-1)
+        num_unique_selections = len(np.unique(selected_inds.cpu()))
+        if include_binary:
+            assert (
+                pi.min() >= 0 and pi.max() <= 1
+            ), "The binary mask option assumes normalized probs"
+            pi_binary = (pi_combined > 0).int()
+            plot_distribution(
+                pi_binary,
+                output_dir,
+                "_BINARY_" + base_name,
+                current_epoch=current_epoch,
+                max_epochs=max_epochs,
+                n_pixels_per_side=n_pixels_per_side,
+                num_unique_selections=num_unique_selections,
+                k=k,
+            )
         plot_distribution(
-            pi_raw_combined,
+            pi_combined,
             output_dir,
             "_COMBINED_" + base_name,
             current_epoch=current_epoch,
             max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
+            num_unique_selections=num_unique_selections,
+            k=k,
         )
         plot_distribution(
             pi_summed,
@@ -290,15 +327,19 @@ def save_pi_snapshot(
             current_epoch=current_epoch,
             max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
+            num_unique_selections=num_unique_selections,
+            k=k,
         )
     elif method == "topk":
         plot_distribution(
-            pi_raw.squeeze(0),
+            pi.squeeze(0),
             output_dir,
             base_name,
             current_epoch=current_epoch,
             max_epochs=max_epochs,
             n_pixels_per_side=n_pixels_per_side,
+            num_unique_selections=num_unique_selections,
+            k=k,
         )
     else:
         raise Exception("Invalid sampling method")
