@@ -1,15 +1,16 @@
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 from models.gumbel_distrib import (
     GumbelDistribution,
     GumbelDistributionBijectiveSoftmax,
     GumbelDistributionLogits,
-    GumbelDistributionSoftPlus,
     GumbelDistributionSoftmaxAct,
+    GumbelDistributionSoftPlus,
 )
-import torch
-import torch
-import torch.nn as nn
-import pytorch_lightning as pl
-import torch.nn.functional as F
+
 
 class ConcreteLinear(pl.LightningModule):
     def __init__(
@@ -359,6 +360,74 @@ def cae_MLP_CANCER(**kwargs):
 def clas_cae_MLP_CANCER(**kwargs):
     return ConcreteClassification(
         input_dim=30,
+        num_classes=2,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+    
+# ARCENE
+
+def cae_MLP_ARCENE(**kwargs):
+    return ConcreteMLP(
+        input_dim=10_000,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_ARCENE(**kwargs):
+    return ConcreteClassification(
+        input_dim=10_000,
+        num_classes=2,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+    
+# DEXTER
+
+def cae_MLP_DEXTER(**kwargs):
+    return ConcreteMLP(
+        input_dim=20_000,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_DEXTER(**kwargs):
+    return ConcreteClassification(
+        input_dim=20_000,
+        num_classes=2,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+    
+# GENE
+
+def cae_MLP_GENE(**kwargs):
+    return ConcreteMLP(
+        input_dim=20531,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_GENE(**kwargs):
+    return ConcreteClassification(
+        input_dim=20531,
+        num_classes=2,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+    
+# BREAST
+
+def cae_MLP_BREAST(**kwargs):
+    return ConcreteMLP(
+        input_dim=12928,
+        decoder_hiddens=[200],
+        **kwargs
+    )
+
+def clas_cae_MLP_BREAST(**kwargs):
+    return ConcreteClassification(
+        input_dim=12928,
         num_classes=2,
         decoder_hiddens=[200],
         **kwargs
