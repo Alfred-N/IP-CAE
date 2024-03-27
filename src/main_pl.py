@@ -189,7 +189,7 @@ def main(args):
         strategy=args.strategy if distributed else "auto",
         precision=args.precision,
         # Training args
-        max_epochs=args.epochs + 1,
+        max_epochs=args.epochs,
         gradient_clip_val=args.clip_grad,
         logger=logger,
         callbacks=callbacks,
