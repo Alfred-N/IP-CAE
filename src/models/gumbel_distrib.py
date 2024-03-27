@@ -547,10 +547,7 @@ class GumbelDistribution(pl.LightningModule):
         if self.training:
             self.update_logits_queue(logits.detach().clone())
 
-            if self.dim_ip == 0:
-                self.trainer.model.log_dict(
-                    {"log_alpha_norm": torch.norm(self.pi_marginal.data).item()}
-                )
+            self.trainer.model.log_dict({"log_alpha_norm": torch.norm(logits).item()})
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:
