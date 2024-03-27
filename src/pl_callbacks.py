@@ -223,7 +223,7 @@ def plot_distribution(
 
     fig, ax = plt.subplots()
     im = ax.imshow(
-        pi_raw.numpy().reshape(n_pixels_per_side, n_pixels_per_side),
+        pi_raw.cpu().numpy().reshape(n_pixels_per_side, n_pixels_per_side),
         cmap="viridis",
         origin="upper",
         vmin=vmin,
@@ -275,8 +275,8 @@ def save_pi_snapshot(
         k, d = pi.shape
         joint_subfolder = os.path.join(output_dir, "joints")
         os.makedirs(joint_subfolder, exist_ok=True)
-        pi_combined = torch.zeros(pi[0].shape)
-        pi_summed = torch.zeros(pi[0].shape)
+        pi_combined = torch.zeros(pi[0].shape, device=pi.device)
+        pi_summed = torch.zeros(pi[0].shape, device=pi.device)
         for idx, row in enumerate(pi):
             if save_individual_distribs:
                 plot_distribution(
@@ -288,7 +288,7 @@ def save_pi_snapshot(
                     n_pixels_per_side=n_pixels_per_side,
                 )
             max_, argmax_ = torch.max(row.unsqueeze(0), dim=1)
-            row_masked = torch.zeros(row.shape)
+            row_masked = torch.zeros(row.shape, device=pi.device)
             row_masked[argmax_] = max_
             pi_combined += row_masked
             pi_summed += row
