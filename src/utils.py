@@ -108,3 +108,36 @@ def get_rank() -> int:
         if rank is not None:
             return int(rank)
     return 0
+
+
+def create_sparse_grid(side_length=28, k=50):
+    # Determine the dimensions of the grid
+    n_rows = int(np.ceil(np.sqrt(k)))
+    n_cols = int(np.ceil(k / n_rows))
+
+    # Initialize an empty image
+    image = np.zeros((side_length, side_length), dtype=int)
+
+    # Calculate spacing based on the more filled dimension
+    if n_cols > n_rows:
+        spacing = side_length / n_cols
+        n_filled_rows = min(n_rows, int(np.ceil(k / n_cols)))
+    else:
+        spacing = side_length / n_rows
+        n_filled_rows = n_rows
+
+    # Calculate offsets to center the grid
+    offset_x = (side_length - (spacing * n_cols)) / 2
+    offset_y = (side_length - (spacing * n_filled_rows)) / 2
+
+    # Populate the grid
+    for i in range(k):
+        row = int(i / n_cols)
+        col = i % n_cols
+        x = int(offset_y + row * spacing)
+        y = int(offset_x + col * spacing)
+
+        if x < side_length and y < side_length:
+            image[x, y] = 1
+
+    return image

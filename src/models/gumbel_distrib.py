@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Function
 from collections import deque
+from utils import create_sparse_grid
 
 
 class IP(pl.LightningModule):
@@ -442,10 +443,21 @@ class GumbelDistribution(pl.LightningModule):
                 prior = torch.eye(num_categories, requires_grad=True)[
                     :num_distributions
                 ]
+            elif marginal_initialization == "grid":
+                side_length = int(np.sqrt(num_categories))
+                assert (
+                    side_length**2 == num_categories
+                ), "'num_categories' must be a perfect square for 'grid' initialization."
+
+                image = create_sparse_grid(side_length, k=num_distributions)
+                prior = torch.zeros([num_distributions, num_categories])
+                one_inds = image.flatten().nonzero()[0]
+                for i, ind in enumerate(one_inds):
+                    prior[i, ind] = 1
             else:
                 raise NotImplementedError
 
-            self.pi_marginal = nn.Parameter(prior)
+            self.pi_marginal = nn.Parameter(prior, requires_grad=True)
 
         self.pi_dropout = nn.Dropout(pi_dropout)
 

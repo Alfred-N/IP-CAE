@@ -265,7 +265,7 @@ def get_args_parser(conf_parser):
     )
     parser.add_argument(
         "--marginal_initialization",
-        choices=["random", "uniform", "identity"],
+        choices=["random", "uniform", "identity", "grid"],
         default="random",
         help="Initialization of alpha/log alpha depending on activation",
     )
