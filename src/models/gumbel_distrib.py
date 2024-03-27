@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Function
+from collections import deque
 
 
 class IP(pl.LightningModule):
@@ -454,6 +455,8 @@ class GumbelDistribution(pl.LightningModule):
             self.pi_layernorm = None
         self.frozen = False
 
+        self.logits_queue = deque(maxlen=2)
+
     def get_scalar_value(
         self,
     ):
@@ -484,6 +487,21 @@ class GumbelDistribution(pl.LightningModule):
         logits = torch.log(pi)
         return pi, logits, pi_raw
 
+    def update_logits_queue(self, logits):
+        """
+        Update the logits queue with new logits and compute the norm of the difference
+        if the queue was already full before the update.
+        """
+        if len(self.logits_queue) == 2:
+            prev_logits = self.logits_queue[-1]
+            grad_norm = torch.norm((logits - prev_logits) / self.trainer.model.lr)
+
+            self.trainer.model.log_dict(
+                {"grad_norm_logits": grad_norm.item()}, on_step=True
+            )
+
+        # Update the queue with the new logits
+        self.logits_queue.append(logits)
 
     def batch_sample_joint(
         self,
@@ -501,6 +519,8 @@ class GumbelDistribution(pl.LightningModule):
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
 
+        if self.training:
+            self.update_logits_queue(logits.detach().clone())
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:
