@@ -484,13 +484,6 @@ class GumbelDistribution(pl.LightningModule):
         logits = torch.log(pi)
         return pi, logits, pi_raw
 
-    def log_gradient_norm(self, grad, name="grad_norm_logits"):
-        # Calculate the norm of the gradient
-        grad_norm = grad.norm(2).item()
-        # Log using the PyTorch Lightning `log` method
-        self.logger.experiment.log(
-            {name: grad_norm, "global_step": self.trainer.global_step}
-        )
 
     def batch_sample_joint(
         self,
@@ -508,8 +501,6 @@ class GumbelDistribution(pl.LightningModule):
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
 
-        if self.training:
-            logits.register_hook(lambda grad: self.log_gradient_norm(grad))
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:

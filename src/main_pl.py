@@ -155,7 +155,7 @@ def main(args):
     else:
         raise NotImplementedError("Model not found")
 
-    if run is not None:
+    if run is not None and bool(args.watch_grads):
         wandb.watch(model, log="all", log_freq=20)
 
     # callback for freezing the gumbel distribution

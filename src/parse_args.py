@@ -123,6 +123,12 @@ def get_args_parser(conf_parser):
         help="String deciding which dataset to load/download",
     )
     parser.add_argument(
+        "--watch_grads",
+        type=int,
+        default=0,
+        help="log grads to wandb",
+    )
+    parser.add_argument(
         "--save_snapshots",
         type=int,
         default=0,
