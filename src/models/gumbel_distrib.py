@@ -35,6 +35,7 @@ class IP(pl.LightningModule):
         else:
             raise ValueError(f"'{IP_initialization}' is not a valid IP initialization")
         self.ip_vectors = nn.Parameter(P_init)  # num_ip x dim_ip
+        self.bias = bias
 
         net_dims = [dim_ip] + hiddens + [num_categories]
         self.weights = self.make_network(net_dims, norm_layer, mlp_dropout, bias=bias)
@@ -68,6 +69,18 @@ class IP(pl.LightningModule):
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
+        if self.training:
+            self.trainer.model.log_dict(
+                {
+                    "W_norm": torch.norm(self.weights[0].weight.data).item(),
+                    "b_norm": (
+                        torch.norm(self.weights[0].bias.data).item()
+                        if self.bias
+                        else None
+                    ),
+                    "phi_norm": torch.norm(self.ip_vectors.data).item(),
+                }
+            )
         return pi_raw
 
 
@@ -467,7 +480,7 @@ class GumbelDistribution(pl.LightningModule):
             self.pi_layernorm = None
         self.frozen = False
 
-        self.logits_queue = deque(maxlen=2)
+        self.logits_queue = deque(maxlen=1)
 
     def get_scalar_value(
         self,
@@ -504,7 +517,7 @@ class GumbelDistribution(pl.LightningModule):
         Update the logits queue with new logits and compute the norm of the difference
         if the queue was already full before the update.
         """
-        if len(self.logits_queue) == 2:
+        if len(self.logits_queue) == 1:
             prev_logits = self.logits_queue[-1]
             grad_norm = torch.norm((logits - prev_logits) / self.trainer.model.lr)
 
@@ -533,6 +546,11 @@ class GumbelDistribution(pl.LightningModule):
 
         if self.training:
             self.update_logits_queue(logits.detach().clone())
+
+            if self.dim_ip == 0:
+                self.trainer.model.log_dict(
+                    {"log_alpha_norm": torch.norm(self.pi_marginal.data).item()}
+                )
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:
