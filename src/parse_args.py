@@ -264,6 +264,12 @@ def get_args_parser(conf_parser):
         help="Dimension of ip vectors to use for distrib (<=0 means no ip inputs)",
     )
     parser.add_argument(
+        "--local_logging",
+        type=int,
+        default=0,
+        help="Enable local logging (to --log_dir)",
+    )
+    parser.add_argument(
         "--marginal_initialization",
         choices=["random", "uniform", "identity", "grid"],
         default="random",

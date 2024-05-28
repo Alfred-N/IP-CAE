@@ -522,7 +522,19 @@ class GumbelDistribution(pl.LightningModule):
             grad_norm = torch.norm((logits - prev_logits) / self.trainer.model.lr)
 
             self.trainer.model.log_dict(
-                {"grad_norm_logits": grad_norm.item()}, on_step=True
+                {
+                    "grad_norm_logits": grad_norm.item(),
+                    "_step": self.trainer.global_step,
+                },
+                on_step=True,
+                on_epoch=False,
+            )
+
+            self.trainer.model.local_log_step(
+                split="train", key="grad_norm_logits", value=grad_norm.item()
+            )
+            self.trainer.model.local_log_step(
+                split="train", key="GRAD2", value=grad_norm.item()
             )
 
         # Update the queue with the new logits

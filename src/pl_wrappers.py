@@ -1,3 +1,4 @@
+from collections import defaultdict
 import torch
 from torch import nn
 import pytorch_lightning as pl
@@ -112,6 +113,10 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         # self.mssim_measure = MultiScaleStructuralSimilarityIndexMeasure()
         self.psnr_measure = PeakSignalNoiseRatio()
         self.loss_type = loss_type
+
+        self.logs = defaultdict(lambda: defaultdict(dict))
+        self.steps = defaultdict(lambda: defaultdict(int))
+        self.local_logs_enabled = bool(args.local_logging)
 
     def forward(self, x, **kwargs):
         return self.model(x, **kwargs)
@@ -228,6 +233,15 @@ class PL_ReconstructionWrapper(pl.LightningModule):
             self.model, self.weight_decay
         )
         return torch.optim.Adam(param_groups, lr=self.lr, betas=(0.9, 0.999))
+
+    def local_log_step(self, split, key, value):
+        """
+        Log metrics to a local variable and increment step counters for each split and key.
+        """
+        assert self.local_logs_enabled, "Can only call if local_logs_enabled"
+        step = self.steps[split][key]
+        self.logs[split][(self.trainer.current_epoch, step)][key] = value
+        self.steps[split][key] += 1
 
 
 class PL_ClassificationWrapper(PL_ReconstructionWrapper):

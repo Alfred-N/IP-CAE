@@ -1,7 +1,9 @@
+from collections import defaultdict
 import os
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import math
 from operator import attrgetter
@@ -370,3 +372,37 @@ class SnapshotCallback(pl.Callback):
             n_pixels_per_side=n_pixels_per_side,
             base_name=base_name,
         )
+
+
+class LocalLoggerCallback(pl.Callback):
+    def __init__(self, log_dir):
+        self.log_dir = log_dir
+
+    def write_logs_to_csv(self, logs, split):
+        log_file = os.path.join(self.log_dir, f"{split}_log.csv")
+
+        # Aggregate logs
+        aggregated_logs = []
+        for (epoch, step), metrics in logs.items():
+            log_entry = {"epoch": epoch, "step": step}
+            log_entry.update(metrics)
+            aggregated_logs.append(log_entry)
+
+        df = pd.DataFrame(aggregated_logs)
+        file_exists = os.path.isfile(log_file)
+        if not file_exists:
+            df.to_csv(log_file, index=False)
+        else:
+            df.to_csv(log_file, mode="a", header=False, index=False)
+
+    def on_train_epoch_end(self, trainer, pl_module):
+        self.write_logs_to_csv(pl_module.logs["train"], "train")
+        pl_module.logs["train"] = defaultdict(dict)  # Clear logs after writing
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        self.write_logs_to_csv(pl_module.logs["val"], "val")
+        pl_module.logs["val"] = defaultdict(dict)  # Clear logs after writing
+
+    def on_test_epoch_end(self, trainer, pl_module):
+        self.write_logs_to_csv(pl_module.logs["test"], "test")
+        pl_module.logs["test"] = defaultdict(dict)  # Clear logs after writing

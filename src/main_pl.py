@@ -15,6 +15,7 @@ from pl_callbacks import (
     FreezeDistribCallback,
     ThresholdCallback,
     WarmupLRCallback,
+    LocalLoggerCallback,
 )
 
 
@@ -69,6 +70,9 @@ def main(args):
         args.lr = args.blr
 
     callbacks = []
+
+    if bool(args.local_logging):
+        callbacks += [LocalLoggerCallback(log_dir=args.log_dir)]
     # Checkpoint callback
     callbacks += [
         ModelCheckpoint(
