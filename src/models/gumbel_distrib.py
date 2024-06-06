@@ -539,9 +539,9 @@ class GumbelDistribution(pl.LightningModule):
                 on_epoch=False,
             )
 
-            self.trainer.model.local_log_step(
-                split="train", key="grad_norm_logits", value=grad_norm.item()
-            )
+            # self.trainer.model.local_log_step(
+            #     split="train", key="grad_norm_logits", value=grad_norm.item()
+            # )
 
         # Update the queue with the new logits
         self.logits_queue.append(logits)
@@ -568,11 +568,11 @@ class GumbelDistribution(pl.LightningModule):
                 on_step=True,
             )
 
-            self.trainer.model.local_log_step(
-                split="train",
-                key="avg_norm_psi_t_dot_psi_t+1",
-                value=avg_psi_I_norm.item(),
-            )
+            # self.trainer.model.local_log_step(
+            #     split="train",
+            #     key="avg_norm_psi_t_dot_psi_t+1",
+            #     value=avg_psi_I_norm.item(),
+            # )
 
         # Update the queue with the new logits
         self.psi_queue.append(psi)
@@ -607,9 +607,9 @@ class GumbelDistribution(pl.LightningModule):
                 Wprod_norm = torch.linalg.matrix_norm(torch.mm(W, W.T)).item()
 
                 self.trainer.model.log_dict({"W_prod_norm": Wprod_norm})
-                self.trainer.model.local_log_step(
-                    split="train", key="W_prod_norm", value=Wprod_norm
-                )
+                # self.trainer.model.local_log_step(
+                #     split="train", key="W_prod_norm", value=Wprod_norm
+                # )
         ###
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
