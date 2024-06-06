@@ -383,9 +383,17 @@ class LocalLoggerCallback(pl.Callback):
 
         # Aggregate logs
         aggregated_logs = []
+        all_metrics = set()
+
+        # First pass to collect all metric names
+        for (epoch, step), metrics in logs.items():
+            all_metrics.update(metrics.keys())
+
+        # Second pass to aggregate logs and ensure all metrics are present in each log entry
         for (epoch, step), metrics in logs.items():
             log_entry = {"epoch": epoch, "step": step}
-            log_entry.update(metrics)
+            for metric in all_metrics:
+                log_entry[metric] = metrics.get(metric, float("nan"))
             aggregated_logs.append(log_entry)
 
         df = pd.DataFrame(aggregated_logs)

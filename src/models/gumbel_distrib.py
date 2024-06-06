@@ -28,6 +28,7 @@ class IP(pl.LightningModule):
         self.num_vectors = num_vectors
         self.num_categories = num_categories
         self.dim_ip = dim_ip
+        self.num_hiddens = len(hiddens)
         if IP_initialization == "random":
             P_init = torch.randn((num_vectors, dim_ip))
         elif IP_initialization == "identity":
@@ -66,21 +67,28 @@ class IP(pl.LightningModule):
     ):
         return 0
 
+    def get_W(
+        self,
+    ):
+        assert self.num_hiddens == 0
+        return self.weights[0].weight
+
+    def get_psis(
+        self,
+    ):
+        return self.ip_vectors
+
     def forward(self):
         # num_ip x num_categories
         pi_raw = self.weights(self.dropout(self.ip_vectors))
         if self.training:
-            self.trainer.model.log_dict(
-                {
-                    "W_norm": torch.norm(self.weights[0].weight.data).item(),
-                    "b_norm": (
-                        torch.norm(self.weights[0].bias.data).item()
-                        if self.bias
-                        else None
-                    ),
-                    "phi_norm": torch.norm(self.ip_vectors.data).item(),
-                }
-            )
+            dict_to_log = {
+                "W_norm": torch.norm(self.weights[0].weight.data).item(),
+                "phi_norm": torch.norm(self.ip_vectors.data).item(),
+            }
+            if self.bias:
+                dict_to_log["b_norm"] = torch.norm(self.weights[0].bias.data).item()
+            self.trainer.model.log_dict(dict_to_log)
         return pi_raw
 
 
@@ -481,6 +489,7 @@ class GumbelDistribution(pl.LightningModule):
         self.frozen = False
 
         self.logits_queue = deque(maxlen=1)
+        self.psi_queue = deque(maxlen=1)
 
     def get_scalar_value(
         self,
@@ -533,12 +542,40 @@ class GumbelDistribution(pl.LightningModule):
             self.trainer.model.local_log_step(
                 split="train", key="grad_norm_logits", value=grad_norm.item()
             )
-            self.trainer.model.local_log_step(
-                split="train", key="GRAD2", value=grad_norm.item()
-            )
 
         # Update the queue with the new logits
         self.logits_queue.append(logits)
+
+    def update_psi_queue(self, psi):
+        """
+        Update the psi queue with new psi vectors and avg_norm_psi_t_dot_psi_t+1
+        """
+        if len(self.psi_queue) == 1:
+            prev_psi = self.psi_queue[-1]
+
+            dotprod = torch.bmm(
+                prev_psi.unsqueeze(1), psi.unsqueeze(-1)
+            )  # shape: (k x 1 x 1)
+            I = torch.eye(self.num_categories)
+            I_expanded = I.repeat((dotprod.shape[0], 1, 1))
+            I_scaled = dotprod * I_expanded
+            avg_psi_I_norm = torch.linalg.matrix_norm(I_scaled).mean()
+
+            self.trainer.model.log_dict(
+                {
+                    "avg_norm_psi_t_dot_psi_t+1": avg_psi_I_norm.item(),
+                },
+                on_step=True,
+            )
+
+            self.trainer.model.local_log_step(
+                split="train",
+                key="avg_norm_psi_t_dot_psi_t+1",
+                value=avg_psi_I_norm.item(),
+            )
+
+        # Update the queue with the new logits
+        self.psi_queue.append(psi)
 
     def batch_sample_joint(
         self,
@@ -556,10 +593,24 @@ class GumbelDistribution(pl.LightningModule):
     ):
         pi, logits, logits_raw = self.get_pi(eps=eps)
 
+        ### Log misc gradient tracking parameters
         if self.training:
             self.update_logits_queue(logits.detach().clone())
 
             self.trainer.model.log_dict({"log_alpha_norm": torch.norm(logits).item()})
+
+            if self.dim_ip > 0:
+                psi = self.pi_marginal.get_psis()
+                self.update_psi_queue(psi.detach().clone())
+
+                W = self.pi_marginal.get_W().detach().clone()  # shape (num_cat, dim_ip)
+                Wprod_norm = torch.linalg.matrix_norm(torch.mm(W, W.T)).item()
+
+                self.trainer.model.log_dict({"W_prod_norm": Wprod_norm})
+                self.trainer.model.local_log_step(
+                    split="train", key="W_prod_norm", value=Wprod_norm
+                )
+        ###
 
         distrib_dict = {"num_categories": pi.shape[1], "current_pi": pi}
         if ret_GJS:

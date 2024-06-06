@@ -240,7 +240,13 @@ class PL_ReconstructionWrapper(pl.LightningModule):
         """
         assert self.local_logs_enabled, "Can only call if local_logs_enabled"
         step = self.steps[split][key]
-        self.logs[split][(self.trainer.current_epoch, step)][key] = value
+        current_epoch = self.trainer.current_epoch
+
+        # Ensure we have a log entry for the current (epoch, step)
+        if (current_epoch, step) not in self.logs[split]:
+            self.logs[split][(current_epoch, step)] = {}
+
+        self.logs[split][(current_epoch, step)][key] = value
         self.steps[split][key] += 1
 
 
