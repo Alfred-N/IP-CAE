@@ -1,6 +1,11 @@
 # Indirectly Parameterized Concrete Autoencoders (IP-CAE)
+Official PyTorch implementation of the ICML 2024 paper
 
-Implementation of Indirectly Parameterized Concrete Autoencoders (IP-CAE). For more information, see https://arxiv.org/abs/2403.00563.
+> **Indirectly Parameterized Concrete Autoencoders**\
+> Alfred Nilsson, Klas Wijk, Sai bharath chandra Gutha, Erik Englesson, Alexandra Hotti, Carlo Saccardi, Oskar Kviman, Jens Lagergren, Ricardo Vinuesa, Hossein Azizpour\
+> https://arxiv.org/abs/2403.00563
+>
+> Abstract: Feature selection is a crucial task in settings where data is high-dimensional or acquiring the full set of features is costly. Recent developments in neural network-based embedded feature selection show promising results across a wide range of applications. Concrete Autoencoders (CAEs), considered state-of-the-art in embedded feature selection, may struggle to achieve stable joint optimization, hurting their training time and generalization. In this work, we identify that this instability is correlated with the CAE learning duplicate selections. To remedy this, we propose a simple and effective improvement: Indirectly Parameterized CAEs (IP-CAEs). IP-CAEs learn an embedding and a mapping from it to the Gumbel-Softmax distributions' parameters. Despite being simple to implement, IP-CAE exhibits significant and consistent improvements over CAE in both generalization and training time across several datasets for reconstruction and classification. Unlike CAE, IP-CAE effectively leverages non-linear relationships and does not require retraining the jointly optimized decoder. Furthermore, our approach is, in principle, generalizable to Gumbel-Softmax distributions beyond feature selection.
 
 ![Indirect parametrization](./imgs/indirect.svg#gh-light-mode-only)
 ![Indirect parametrization](./imgs/indirect_bg.svg#gh-dark-mode-only)
@@ -56,12 +61,10 @@ The exact architectures for each dataset are defined at the end of `src/models/c
 ## Citation
 
 ```
-@misc{nilsson2024indirectly,
+@inproceedings{nilsson2024indirectly,
       title={Indirectly Parameterized Concrete Autoencoders}, 
       author={Alfred Nilsson and Klas Wijk and Sai bharath chandra Gutha and Erik Englesson and Alexandra Hotti and Carlo Saccardi and Oskar Kviman and Jens Lagergren and Ricardo Vinuesa and Hossein Azizpour},
-      year={2024},
-      eprint={2403.00563},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      booktitle={International Conference on Machine Learning},
+      year={2024}
 }
 ```
