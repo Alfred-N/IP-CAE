@@ -41,7 +41,7 @@ Example command for reproducing MNIST results:
 
 Reconstruction:
 
-`python src/main_pl.py --config=configs/MNIST/base.yaml --dim_ip=784 --seed=11`
+`python src/main_pl.py --config=configs/MNIST/base.yaml --dim_ip=784 --seed=11 --accelerator=cpu`
 
 Classification:
 
