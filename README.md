@@ -45,7 +45,7 @@ Reconstruction:
 
 Classification:
 
-`python src/main_pl.py --config=configs/MNIST/classification.yaml  --dim_ip=784 --seed=11`
+`python src/main_pl.py --config=configs/MNIST/classification.yaml  --dim_ip=784 --seed=11 --accelerator=cpu`
 
 ## Arguments, configs and priority
 The full list of arguments and their descriptions can be found in `src/parse_args.py`. These arguments are the same as the arguments in the config files. You can adjust the configs files or provide the arguments from the command line.
